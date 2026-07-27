@@ -21,7 +21,7 @@ function App() {
             </ProtectedRoute>
         }/>
         <Route path='/login' element={<Login/>}/>
-        <Route path="/profile" element={<Profile/>} />
+        <Route path="/user/profile" element={<Profile/>} />
         <Route path="/recipes" element={<RecipeCard type='all'/>} />
         <Route path="/recipes/:_id" element={<RecipeDetails/>} />
         <Route path="/about" element={<About/>} />

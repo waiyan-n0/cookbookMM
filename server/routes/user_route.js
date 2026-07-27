@@ -8,6 +8,6 @@ router.post('/register', userController.register);
 router.post('/login', userController.login);
 router.get('/me', verifyToken, userController.getMe);
 router.get('/profiles', userController.getAllUsers)
-router.patch('/profile', userController.updateProfile);
+router.patch('/profile', verifyToken, userController.updateProfile);
 
 module.exports = router;

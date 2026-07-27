@@ -1,50 +1,56 @@
-import {useEffect, useRef, useState} from "react";
-import defaultPf from './../assets/images/defaultProfile.jpg'
-import {supabase} from "../config/supabaseClient.js";
-import {useNavigate} from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import defaultPf from './../assets/images/defaultProfile.jpg';
+import { supabase } from "../config/supabaseClient.js";
+import { useNavigate } from "react-router-dom";
 import RecipeList from "../components/RecipeList.jsx";
 import NavBar from "../components/NavBar.jsx";
 import CreateRecipe from "../components/CreateRecipe.jsx";
 import Footer from "../components/Footer.jsx";
 import Notification from "../components/Notification.jsx";
 
-const Profile = () =>{
+const Profile = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState({});
     const [imgUrl, setImgUrl] = useState("");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [currentView, setCurrentView] = useState("myList");
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [noti, setNoti] = useState({show: false, msg:'', type:''});
+
+    // Edit Modal & Form State များ
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    const [noti, setNoti] = useState({ show: false, msg: '', type: '' });
     const fileInputRef = useRef(null);
 
-    const handleFileChange = async(e) =>{
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
-        if(!file) return;
+        if (!file) return;
 
-        if(file.size > 5 * 1024 * 1024) {
+        if (file.size > 5 * 1024 * 1024) {
             setNoti({ show: true, msg: "File is too large! Maximum limit is 5MB.", type: "error" });
             return;
         }
 
         setImgUrl(URL.createObjectURL(file));
-        try{
+        try {
             const fileExtension = file.name.split(".").pop();
-            const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2,7)}.${fileExtension}`;
+            const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExtension}`;
             const filePath = `store_users_pf/${uniqueFileName}`;
-            const {data: uploadData, err: uploadError} = await supabase.storage
+            const { data: uploadData, err: uploadError } = await supabase.storage
                 .from('users_pf')
                 .upload(filePath, file);
-            console.log(uploadData);
-            if(uploadError){
+
+            if (uploadError) {
                 console.log(uploadError);
                 setNoti({ show: true, msg: 'Profile uploading Error!', type: 'error' });
                 return;
             }
 
-            const {data: {publicUrl}} = supabase.storage.from('users_pf').getPublicUrl(filePath);
+            const { data: { publicUrl } } = supabase.storage.from('users_pf').getPublicUrl(filePath);
 
-            const response = await fetch('http://localhost:3000/users/profile',{
+            const response = await fetch('http://localhost:3000/users/profile', {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -56,27 +62,27 @@ const Profile = () =>{
                 }),
             });
 
-            if(!response.ok){
-                console.log('!response.ok: ',response);
-                setNoti({ show: false, msg: 'Profile Uploading Error!', type: 'error' });
-                return new Error('Profile updated Error!');
+            if (!response.ok) {
+                setNoti({ show: true, msg: 'Profile Uploading Error!', type: 'error' });
+                return;
             }
 
             const data = await response.json();
-            if(data.result){
+            if (data.result) {
                 setUser(data.result);
-                setImgUrl(data.result.image || publicUrl)
-            }else{
-                setUser(prev=>({...prev,image: publicUrl}));
+                setImgUrl(data.result.image || publicUrl);
+            } else {
+                setUser(prev => ({ ...prev, image: publicUrl }));
                 setImgUrl(publicUrl);
             }
-            setNoti({ show: true, msg: 'Profile updated successfully!', type: 'success' });
-        } catch(err) {
+            setNoti({ show: true, msg: 'Profile image updated successfully!', type: 'success' });
+        } catch (err) {
             console.log(err);
             setNoti({ show: true, msg: "Something went wrong updating profile.", type: "error" });
         }
     };
-    const getUser = async() =>{
+
+    const getUser = async () => {
         fetch("http://localhost:3000/users/me", {
             method: 'GET',
             headers: {
@@ -84,70 +90,80 @@ const Profile = () =>{
             },
         })
             .then((response) => {
-                if(!response.ok){
-                    console.log('response: ',response);
-                    setNoti({show:true, msg: 'Fail to fetch login data!', type: 'error'});
+                if (!response.ok) {
+                    setNoti({ show: true, msg: 'Fail to fetch login data!', type: 'error' });
                     throw new Error('Fail to fetch login data!');
                 }
                 return response.json();
             })
-            .then((data)=>{
+            .then((data) => {
                 setUser(data.result);
-                if(data.result?.image) setImgUrl(data.result.image);
+                setEditName(data.result?.name || "");
+                if (data.result?.image) setImgUrl(data.result.image);
             })
-            .catch((err)=>{
-                console.log(err)
+            .catch((err) => {
+                console.log(err);
                 setNoti({ show: true, msg: 'Server Error! Fail to fetch user data.', type: 'error' });
             });
-    }
-    const updateUser = async() =>{
-        try{
-            fetch("http://localhost:3000/users/me", {
+    };
+
+    const updateUser = async (e) => {
+        e.preventDefault();
+        if (!editName.trim()) {
+            setNoti({ show: true, msg: 'Name cannot be empty!', type: 'error' });
+            return;
+        }
+
+        setIsUpdating(true);
+        try {
+            const response = await fetch("http://localhost:3000/users/profile", {
                 method: 'PATCH',
                 headers: {
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
-            })
-                .then((response) => {
-                    if(!response.ok){
-                        console.log('response: ',response);
-                        throw new Error('Fail to fetch login data!');
-                    }
-                    return response.json();
-                }).catch((err)=>{
-                console.log('error in profile: ',err)
-                setNoti({ show: true, msg: 'Server Error during update!', type: 'error' });
+                body: JSON.stringify({
+                    name: editName,
+                }),
             });
-        }catch(err){
-            console.log('Profile update error: ',err);
-            setNoti({ show: true, msg: 'Profile updated Error!', type: 'error' });
-        }
-    }
-    useEffect(() => { getUser() }, []);
-    // useEffect(() => {
-    //     if (user) {
-    //         //console.log('User data:', user);
-    //     }
-    // }, [user]);
 
-    const logout = ()=> {
-        setNoti({show: true, msg: 'Your account is logging out!', type: 'success'});
+            const data = await response.json();
+
+            if (!response.ok) {
+                return new Error(data.message || 'Fail to update profile!');
+            }
+
+            setUser(prev => ({ ...prev, name: editName }));
+            setIsEditModalOpen(false);
+            setNoti({ show: true, msg: 'Profile updated successfully!', type: 'success' });
+        } catch (err) {
+            console.log('Profile update error: ', err);
+            setNoti({ show: true, msg: err.message || 'Profile update error!', type: 'error' });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    useEffect(() => { getUser(); }, []);
+
+    const logout = () => {
+        setNoti({ show: true, msg: 'Your account is logging out!', type: 'success' });
         setIsSidebarOpen(false);
-        setTimeout(()=> {
+        setTimeout(() => {
             localStorage.clear();
             window.dispatchEvent(new Event('local-storage-update'));
             navigate('/home');
         }, 2000);
-    }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50/60 text-slate-800 flex flex-col relative overflow-x-hidden">
             {noti.show && (
                 <div className="fixed top-5 right-5 z-50">
-                    <Notification message={noti.msg} type={noti.type} onClose={() => setNoti({ show: false, msg: "", type: "" })}/>
+                    <Notification message={noti.msg} type={noti.type} onClose={() => setNoti({ show: false, msg: "", type: "" })} />
                 </div>
             )}
-            <NavBar clickPf={() => setIsSidebarOpen(true)} imgUrl={imgUrl} defaultPf={defaultPf}/>
+            <NavBar clickPf={() => setIsSidebarOpen(true)} imgUrl={imgUrl} defaultPf={defaultPf} />
             <main className="flex-1 w-full max-w-8xl mx-auto p-6 md:p-10 space-y-6">
                 <div className="border-b border-slate-200 pb-4">
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight capitalize">
@@ -176,11 +192,13 @@ const Profile = () =>{
                     </button>
                 </div>
                 <div className="p-6 border-b border-slate-100 bg-linear-to-b from-slate-50 to-white relative group">
-                    <button onClick={() => { updateUser() }} aria-label="Edit profile"
-                            className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                    <button onClick={() => {setEditName(user?.name || "");
+                            setIsEditModalOpen(true);
+                        }} aria-label="Edit profile"
+                        className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                         </svg>
                     </button>
 
@@ -200,11 +218,11 @@ const Profile = () =>{
                     </div>
                 </div>
                 <div className="flex-1 p-4 space-y-2 overflow-y-auto">
-                    <button onClick={() => {setIsSidebarOpen(false); setIsCreateModalOpen(true);}}
+                    <button onClick={() => { setIsSidebarOpen(false); setIsCreateModalOpen(true); }}
                             className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-xs transition-colors cursor-pointer mb-4"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
                         Create New Recipe
                     </button>
@@ -240,8 +258,64 @@ const Profile = () =>{
                     </button>
                 </div>
             </div>
-            <CreateRecipe isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} author={user}/>
-            <Footer/>
+
+            {/* Edit Profile Modal */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                            <h3 className="font-bold text-slate-800 text-base">Edit Profile</h3>
+                            <button onClick={() => setIsEditModalOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <form onSubmit={(e)=>updateUser(e)} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
+                                <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-amber-500 text-sm"
+                                    placeholder="Enter your name"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
+                                <input
+                                    type="email"
+                                    value={user?.email || ""}
+                                    disabled
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-100 text-slate-500 text-sm cursor-not-allowed"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-sm font-semibold transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isUpdating}
+                                    className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+                                >
+                                    {isUpdating ? "Saving..." : "Save Changes"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            <CreateRecipe isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} author={user} />
+            <Footer />
         </div>
     );
 };

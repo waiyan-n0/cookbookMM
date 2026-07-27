@@ -61,27 +61,41 @@ const getAllUsers = async(req, res, next) => {
 const getMe = async(req, res, next) => {
     Msg(res, "User Info", req.user);
 }
-const updateProfile = async(req,res,next)=>{
-    try{
-        const {userId, image} = req.body;
-        if(!userId){
-            next(new Error('User does not exist!'));
-            return;
+const updateProfile = async (req, res, next) => {
+    try {
+        const userId = req.user?._id;
+        const { name, image } = req.body;
+
+        if (!userId) {
+            return next(new Error('User ID is required!'));
         }
-        const updateUser = await users.updateOne(
-            {_id: userId},
-            { $set: { image: image} },{upsert:true},
-        );
-        const updatedUserDoc = await users.findById(userId).select('-password');
+
+        const updateFields = {};
+        if (name !== undefined) updateFields.name = name;
+        if (image !== undefined) updateFields.image = image;
+
+        if (Object.keys(updateFields).length === 0) {
+            return next(new Error('No fields provided to update!'));
+        }
+
+        const updatedUserDoc = await users.findByIdAndUpdate(
+            userId,
+            { $set: updateFields },
+            { returnDocument: 'after', runValidators: true }
+        ).select('-password');
+
+        if (!updatedUserDoc) {
+            return next(new Error('User not found!'));
+        }
         const updatedUserObj = updatedUserDoc.toObject();
         await setCacheUser(userId.toString(), updatedUserObj);
-
-        Msg(res, "Profile updated successfully.", updateUser);
-    }catch(err){
-        console.log(err);
+        Msg(res, "Profile updated successfully.", updatedUserObj);
+    } catch (err) {
+        console.log('Error updating profile: ', err);
         next(new Error('Error updating profile'));
     }
-}
+};
+
 module.exports ={
     register, login,
     getMe, getAllUsers,

@@ -65,7 +65,7 @@ const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
                 if (uploadError) {
                     console.log(uploadError);
                     setLoading(false);
-                    setNoti({show:true, msg:"Image Uploading Error!",type:"error"});
+                    setNoti({show:true, msg:"Image Uploading Error! Try Again.",type:"error"});
                     return new Error('Image uploading Error!');
                 }
 

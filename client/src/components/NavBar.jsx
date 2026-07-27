@@ -35,10 +35,10 @@ const NavBar = ({ clickPf, imgUrl }) => {
     };
 
     const handleProfileClick = () => {
-        if (location.pathname === '/profile') {
+        if (location.pathname === '/user/profile') {
             if (clickPf) clickPf();
         } else {
-            navigate('/profile');
+            navigate('/user/profile');
         }
     };
 
