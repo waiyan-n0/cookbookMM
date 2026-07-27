@@ -20,6 +20,10 @@ const recipeSchema = new Schema({
     cookingTime: {type: String, required: true},
     image: {type: String, required: true},
     createAt: {type: Date, default: Date.now},
+    likes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 });
 
 const recipes = mongoose.model('recipes', recipeSchema);

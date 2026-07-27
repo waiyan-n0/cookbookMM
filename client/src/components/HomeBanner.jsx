@@ -19,7 +19,7 @@ const banners = [
         title: "Master the Art of Pasta",
         image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=1600&auto=format&fit=crop",
         link: "/recipes",
-        text: "Discover European Food",
+        text: "Discover Traditional Food",
     },
     {
         id: 3,
@@ -50,9 +50,8 @@ const HomeBanner = () => {
                             <p className="curlyFont text-6xl md:text-8xl lg:text-[100px] text-[#FDF3D7] leading-tight drop-shadow-lg mb-8 animate-fadeInUp">
                                 {slide.title}
                             </p>
-                            <button
-                                onClick={() => navigate(`${slide.link}`)}
-                                className="group relative bg-[#fdf3d7] text-amber-950 font-bold px-10 py-4 rounded-full text-lg shadow-2xl hover:bg-white transition-all duration-300 hover:scale-105 active:scale-95"
+                            <button onClick={() => navigate(`${slide.link}`)}
+                                className=" group relative bg-[#fdf3d7] text-amber-950 font-bold px-10 py-2 lg:py-4 rounded-full text-lg shadow-2xl hover:bg-white transition-all duration-300 hover:scale-105 active:scale-95"
                             >
                                 <span className="relative z-10">{slide.text}</span>
                                 <div className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 blur-xl"></div>

@@ -11,7 +11,6 @@ import RecipeDetails from "./pages/RecipeDetails.jsx";
 import About from "./pages/About.jsx";
 
 function App() {
-
   return (
     <>
      <Routes>
@@ -26,7 +25,7 @@ function App() {
         <Route path="/recipes" element={<RecipeCard type='all'/>} />
         <Route path="/recipes/:_id" element={<RecipeDetails/>} />
         <Route path="/about" element={<About/>} />
-        {/*<Route path="/createRecipe" element={<CreateRecipe/>} />*/}
+        {/*<Route path="/comment" element={<Comment/>} />*/}
         <Route path="*" element={<Error />} />
 
      </Routes>

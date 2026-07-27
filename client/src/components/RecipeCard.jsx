@@ -2,27 +2,107 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "./NavBar.jsx";
 import Footer from "./Footer.jsx";
+import Notification from "./Notification.jsx";
 
 const RecipeCard = ({ type }) => {
     const navigate = useNavigate();
     const [recipes, setRecipes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [noti, setNoti] = useState({show:false, msg:"",type:""});
+    const token = localStorage.getItem("token");
 
     useEffect(() => {
         setLoading(true);
         fetch(`http://localhost:3000/recipes/types/${type}`)
             .then((response) => response.json())
             .then(data => {
-                //console.log("Fetched recipes:", data.result);
-                setRecipes(data.result || []);
+                const fetchedRecipes = data.result || [];
+                setRecipes(fetchedRecipes);
                 setLoading(false);
+
+                if (token && fetchedRecipes.length > 0) {
+                    fetchedRecipes.forEach(recipe => {
+                        fetch(`http://localhost:3000/interactions/${recipe._id}/like-status`, {
+                            headers: { "Authorization": `Bearer ${token}` }
+                        })
+                            .then(res => res.json())
+                            .then(statusData => {
+                                if(statusData.con) {
+                                    setRecipes(prev => prev.map(r =>
+                                        r._id === recipe._id ? { ...r, isLiked: statusData.result.isLiked } : r
+                                    ));
+                                }
+                            })
+                            .catch(err => console.error("Error fetching like status:", err));
+                    });
+                }
             })
             .catch(error => {
                 console.error('Error Fetching Data: ', error);
+                setNoti({show:true,msg:'Error Fetching Data!',type: 'error'});
                 setLoading(false);
             });
-    }, [type]);
+    }, [type, token]);
 
+    const like = async (e, recipeId, isLiked) => {
+        e.stopPropagation();
+        if (!token) {
+            setNoti({show:true,msg:"You need to login to like this post!",type:'error'});
+            return;
+        }
+        setRecipes(prevRecipes => prevRecipes.map(recipe => {
+            if (recipe._id === recipeId) {
+                const currentLikes = recipe.likes || 0;
+                return {
+                    ...recipe,
+                    isLiked: !isLiked,
+                    likes: isLiked ? currentLikes - 1 : currentLikes + 1,
+                };
+            }
+            return recipe;
+        }));
+
+        try {
+            const response = await fetch("http://localhost:3000/interactions/like", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ recipe_id: recipeId })
+            });
+
+            const data = await response.json();
+            if (!response.ok) new Error("API Error");
+
+            if(data.con) {
+                setRecipes(prevRecipes => prevRecipes.map(recipe =>
+                    recipe._id === recipeId ? { ...recipe, isLiked: data.result.isLiked, likes: data.result.likes_count } : recipe
+                ));
+            }
+        } catch (error) {
+            console.error("Error toggling like:", error);
+            setNoti({show: true,msg: 'Error giving like!',type:'error'});
+            setRecipes(prevRecipes => prevRecipes.map(recipe => {
+                if (recipe._id === recipeId) {
+                    const currentLikes = recipe.likes || 0;
+                    return {
+                        ...recipe,
+                        isLiked: isLiked,
+                        likes: isLiked ? currentLikes + 1 : currentLikes - 1
+                    };
+                }
+                return recipe;
+            }));
+        }
+    }
+    const goDetail = async(recipe) =>{
+        if(!token){
+            setNoti({show:true, msg:'You need to login to see the recipe\'s details and instructions! ',type:'error'});
+            return;
+        }
+        navigate(`/recipes/${recipe._id}`);
+    }
     if (loading) {
         return (
             <div className="flex h-48 items-center justify-center text-gray-400 animate-pulse">
@@ -33,7 +113,12 @@ const RecipeCard = ({ type }) => {
 
     return (
         <section className='w-full mx-auto'>
-            {type==="all"? (<NavBar/>): null }
+            {type === "all" ? (<NavBar />) : null}
+            {noti.show && (
+                <div className="fixed top-5 right-5 z-50">
+                    <Notification message={noti.msg} type={noti.type} onClose={() => setNoti({ show: false, msg: "", type: "" })}/>
+                </div>
+            )}
             <h1 className='font-bold text-2xl px-8 py-2 underline capitalize'>{type}</h1>
             {recipes.length === 0 ? (
                 <div className="flex flex-col w-full items-center justify-center bg-amber-50/40 border border-dashed border-amber-200 rounded-2xl mx-auto text-center">
@@ -50,9 +135,8 @@ const RecipeCard = ({ type }) => {
             ) : (
                 <div className='flex flex-row flex-wrap gap-6 px-8 justify-start'>
                     {recipes.map((recipe) => (
-                        <div key={recipe._id} onClick={() => navigate(`/recipes/${recipe._id}`)}
+                        <div key={recipe._id} onClick={() => goDetail(recipe)}
                              className="w-full max-w-xs overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer">
-
                             <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
                                 <img src={recipe.image} alt={recipe.recipe_name}
                                      className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
@@ -78,19 +162,28 @@ const RecipeCard = ({ type }) => {
                                 <hr className="border-gray-100 my-2"/>
 
                                 <div className="flex items-center justify-around text-sm text-gray-600 pt-1">
-                                    <button className="flex items-center gap-1.5 hover:text-red-500 transition-colors py-1 px-2 rounded-md hover:bg-gray-50">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                                    <button onClick={(e) => like(e, recipe._id, recipe.isLiked)}
+                                            className={`flex items-center gap-1.5 transition-colors py-1 px-2 rounded-md hover:bg-gray-50 ${
+                                                recipe.isLiked ? 'text-red-500 font-semibold' : 'text-gray-600 hover:text-red-500'
+                                            }`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill={recipe.isLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
                                         </svg>
-                                        <span className="text-xs font-medium">like</span>
+                                        <span className="text-xs font-medium">
+                                            {Array.isArray(recipe.likes) ? recipe.likes.length : (recipe.likes || 0)}{" "}
+                                            {(Array.isArray(recipe.likes) ? recipe.likes.length : (recipe.likes || 0)) === 1 ? 'like' : 'likes'}
+                                        </span>
                                     </button>
-                                    <span className="text-xs text-gray-500 font-medium">likes</span>
+
                                     <span className="text-gray-300" aria-hidden="true">|</span>
-                                    <button onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 hover:text-blue-500 transition-colors py-1 px-2 rounded-md hover:bg-gray-50">
+
+                                    <button className="flex items-center gap-1.5 hover:text-blue-500 transition-colors py-1 px-2 rounded-md hover:bg-gray-50">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48L4.32 19.8c-.11.353.17.65.514.543l2.582-.805c1.333.456 2.793.712 4.284.712Z"/>
                                         </svg>
-                                        <span className="text-xs font-medium">Comment</span>
+                                        <span className="text-xs font-medium">
+                                            {recipe.commentsCount || 0} {(recipe.commentsCount || 0) === 1 ? 'comment' : 'comments'}
+                                        </span>
                                     </button>
                                 </div>
                             </div>
@@ -99,7 +192,7 @@ const RecipeCard = ({ type }) => {
                     ))}
                 </div>
             )}
-            {type==="all"? (<Footer/>): null }
+            {type === "all" ? (<Footer />) : null}
         </section>
     );
 }

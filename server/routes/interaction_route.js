@@ -1,8 +1,14 @@
 const express = require('express');
-const {Msg} = require("../utils/helperFunc");
 const router = express.Router();
-const interactionController = require("../controllers/interactions_controller");
+const interaction = require('../controllers/interactions_controller');
+const { verifyToken } = require('../middlewares/auth_middleware');
 
-// router.post('/:id',interactionController.like());
-//
-// module.exports = router;
+router.get('/:recipe_id/like-status', verifyToken, interaction.checkLikeStatus);
+router.post('/like', verifyToken, interaction.like);
+
+router.get('/:recipeId/comments', interaction.getCommentsByRecipe );
+router.post('/comment', verifyToken, interaction.postComment);
+router.delete('/comment', interaction.deleteComment);
+
+
+module.exports = router;

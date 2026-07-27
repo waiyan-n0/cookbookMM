@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import RecipeCard from "../components/RecipeCard";
 import NavBar from "../components/NavBar";
 import Footer from "../components/Footer";
+import Comment from "../pages/Comment";
 
 const RecipeDetails = () => {
     const [detail, setDetail] = useState(null);
@@ -13,7 +14,7 @@ const RecipeDetails = () => {
             .then(data => setDetail(data.result))
             .catch(err => console.error('Error fetching data: ', err));
     }, [_id]);
-    // console.log('what inside: ',detail)
+    // console.log('what inside: ',detail);
     if (!detail) {
         return (
             <div className="flex h-64 items-center justify-center text-lg font-medium text-gray-500 animate-pulse">
@@ -30,13 +31,10 @@ const RecipeDetails = () => {
 
                 <div className="space-y-2">
                     <div className="flex items-center justify-between space-y-3">
-                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">
-                            {recipe_name}
-                        </h1>
+                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">{recipe_name}</h1>
                         <div className='flex flex-col items-end'>
-                            <div className="flex items-center gap-2.5">
-                                <div
-                                    className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 border border-amber-200 text-amber-600">
+                            <div className="flex items-center justify-center gap-2.5 mb-2">
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 border border-amber-200 text-amber-600">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                          strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
                                         <path strokeLinecap="round" strokeLinejoin="round"
@@ -44,12 +42,10 @@ const RecipeDetails = () => {
                                     </svg>
                                 </div>
                                 <p className="text-xs font-medium text-slate-400">
-                                    <span
-                                        className="text-sm font-semibold text-slate-700 hover:text-amber-600 transition-colors cursor-pointer">{author?.name || "Anonymous Author"}</span>
+                                    <span className="text-sm font-semibold text-slate-700 hover:text-amber-600 transition-colors cursor-pointer">{author?.name || "Anonymous Author"}</span>
                                 </p>
                             </div>
-                            <div
-                                className="text-xs font-medium text-slate-500 sm:text-right bg-white sm:bg-transparent px-2.5 py-1 sm:p-0 rounded-md border border-slate-100 sm:border-none shadow-sm sm:shadow-none">
+                            <div className="text-xs font-medium text-slate-500 sm:text-right bg-white sm:bg-transparent px-2.5 sm:p-0 rounded-md border border-slate-100 sm:border-none shadow-sm sm:shadow-none">
                                 {new Date(createAt).toLocaleDateString('en-US', {
                                     month: 'short',
                                     day: 'numeric',
@@ -63,8 +59,7 @@ const RecipeDetails = () => {
                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"/>
                     </div>
 
-                    <div
-                        className="grid lg:grid-cols-4 sm:grid-cols-2 gap-2 py-3 px-4 bg-gray-50 rounded-xl text-center text-sm font-medium text-gray-600">
+                    <div className="grid lg:grid-cols-4 grid-cols-2 gap-2 py-3 px-4 bg-gray-50 rounded-xl text-center text-sm font-medium text-gray-600">
                         <div className="border-r border-gray-200">
                             <span className="block text-xs text-gray-400 uppercase font-bold">Preparation Time</span>
                             {prepTime} mins
@@ -109,6 +104,12 @@ const RecipeDetails = () => {
                     ))}
                 </ol>
             </div>
+
+            {detail && detail._id ? (
+                <Comment recipeId={detail._id} />
+            ) : (
+                <div className="text-center text-sm text-gray-400">Loading comments...</div>
+            )}
             <div>
                 <h1 className='font-bold text-3xl px-8 '>Related Recipes🧑🏼‍🍳</h1>
                 <RecipeCard type={`${detail.category}`}/>

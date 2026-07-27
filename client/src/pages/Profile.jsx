@@ -6,6 +6,7 @@ import RecipeList from "../components/RecipeList.jsx";
 import NavBar from "../components/NavBar.jsx";
 import CreateRecipe from "../components/CreateRecipe.jsx";
 import Footer from "../components/Footer.jsx";
+import Notification from "../components/Notification.jsx";
 
 const Profile = () =>{
     const navigate = useNavigate();
@@ -14,15 +15,18 @@ const Profile = () =>{
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [currentView, setCurrentView] = useState("myList");
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [noti, setNoti] = useState({show: false, msg:'', type:''});
     const fileInputRef = useRef(null);
 
     const handleFileChange = async(e) =>{
         const file = e.target.files[0];
         if(!file) return;
+
         if(file.size > 5 * 1024 * 1024) {
-            alert("File is too large! Maximum limit is 5MB.");
+            setNoti({ show: true, msg: "File is too large! Maximum limit is 5MB.", type: "error" });
             return;
         }
+
         setImgUrl(URL.createObjectURL(file));
         try{
             const fileExtension = file.name.split(".").pop();
@@ -31,13 +35,15 @@ const Profile = () =>{
             const {data: uploadData, err: uploadError} = await supabase.storage
                 .from('users_pf')
                 .upload(filePath, file);
+            console.log(uploadData);
             if(uploadError){
                 console.log(uploadError);
-                alert('Profile uploading Error!');
-                return new Error('Profile uploading Error!')
+                setNoti({ show: true, msg: 'Profile uploading Error!', type: 'error' });
+                return;
             }
-            const {data: {publicUrl}} = supabase.storage
-                .from('users_pf').getPublicUrl(filePath);
+
+            const {data: {publicUrl}} = supabase.storage.from('users_pf').getPublicUrl(filePath);
+
             const response = await fetch('http://localhost:3000/users/profile',{
                 method: 'PATCH',
                 headers: {
@@ -45,15 +51,17 @@ const Profile = () =>{
                     Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
                 body: JSON.stringify({
-                        userId: user._id,
-                        image: publicUrl
-                    }),
+                    userId: user._id,
+                    image: publicUrl
+                }),
             });
-            console.log(response);
+
             if(!response.ok){
                 console.log('!response.ok: ',response);
-                throw new Error('Profile updated Error!');
+                setNoti({ show: false, msg: 'Profile Uploading Error!', type: 'error' });
+                return new Error('Profile updated Error!');
             }
+
             const data = await response.json();
             if(data.result){
                 setUser(data.result);
@@ -62,10 +70,10 @@ const Profile = () =>{
                 setUser(prev=>({...prev,image: publicUrl}));
                 setImgUrl(publicUrl);
             }
-            alert('updated successfully!');
-        }catch(err){
+            setNoti({ show: true, msg: 'Profile updated successfully!', type: 'success' });
+        } catch(err) {
             console.log(err);
-            alert("Something went wrong updating profile.");
+            setNoti({ show: true, msg: "Something went wrong updating profile.", type: "error" });
         }
     };
     const getUser = async() =>{
@@ -78,18 +86,18 @@ const Profile = () =>{
             .then((response) => {
                 if(!response.ok){
                     console.log('response: ',response);
+                    setNoti({show:true, msg: 'Fail to fetch login data!', type: 'error'});
                     throw new Error('Fail to fetch login data!');
                 }
                 return response.json();
             })
             .then((data)=>{
-                // console.log("Fetched User Data on Refresh:", data.result);
                 setUser(data.result);
                 if(data.result?.image) setImgUrl(data.result.image);
             })
             .catch((err)=>{
                 console.log(err)
-                throw new Error('Server Error!');
+                setNoti({ show: true, msg: 'Server Error! Fail to fetch user data.', type: 'error' });
             });
     }
     const updateUser = async() =>{
@@ -97,7 +105,7 @@ const Profile = () =>{
             fetch("http://localhost:3000/users/me", {
                 method: 'PATCH',
                 headers: {
-                    Authorization: `Bearer $z{localStorage.getItem('token')}`,
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
             })
                 .then((response) => {
@@ -106,27 +114,40 @@ const Profile = () =>{
                         throw new Error('Fail to fetch login data!');
                     }
                     return response.json();
-            }).catch((err)=>{
+                }).catch((err)=>{
                 console.log('error in profile: ',err)
-                throw new Error('Server Error!');
+                setNoti({ show: true, msg: 'Server Error during update!', type: 'error' });
             });
         }catch(err){
             console.log('Profile update error: ',err);
-            return new Error('Profile updated Error!');
+            setNoti({ show: true, msg: 'Profile updated Error!', type: 'error' });
         }
     }
     useEffect(() => { getUser() }, []);
-    useEffect(() => {
-        if (user) {
-            console.log('User data:', user);
-        }
-    }, [user]);
+    // useEffect(() => {
+    //     if (user) {
+    //         //console.log('User data:', user);
+    //     }
+    // }, [user]);
+
+    const logout = ()=> {
+        setNoti({show: true, msg: 'Your account is logging out!', type: 'success'});
+        setIsSidebarOpen(false);
+        setTimeout(()=> {
+            localStorage.clear();
+            window.dispatchEvent(new Event('local-storage-update'));
+            navigate('/home');
+        }, 2000);
+    }
 
     return (
         <div className="min-h-screen bg-slate-50/60 text-slate-800 flex flex-col relative overflow-x-hidden">
-
+            {noti.show && (
+                <div className="fixed top-5 right-5 z-50">
+                    <Notification message={noti.msg} type={noti.type} onClose={() => setNoti({ show: false, msg: "", type: "" })}/>
+                </div>
+            )}
             <NavBar clickPf={() => setIsSidebarOpen(true)} imgUrl={imgUrl} defaultPf={defaultPf}/>
-
             <main className="flex-1 w-full max-w-8xl mx-auto p-6 md:p-10 space-y-6">
                 <div className="border-b border-slate-200 pb-4">
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight capitalize">
@@ -179,12 +200,10 @@ const Profile = () =>{
                     </div>
                 </div>
                 <div className="flex-1 p-4 space-y-2 overflow-y-auto">
-
                     <button onClick={() => {setIsSidebarOpen(false); setIsCreateModalOpen(true);}}
-                        className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-xs transition-colors cursor-pointer mb-4"
+                            className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-xs transition-colors cursor-pointer mb-4"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5}
-                             stroke="currentColor" className="w-4 h-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
                         </svg>
                         Create New Recipe
@@ -215,7 +234,7 @@ const Profile = () =>{
 
                 </div>
                 <div className="p-4 border-t border-slate-100 bg-slate-50">
-                    <button onClick={() => { localStorage.clear(); navigate('/home'); }}
+                    <button onClick={() => logout()}
                             className="w-full border-1 text-center font-semibold text-red-500 hover:text-white hover:bg-red-600 py-2 rounded-lg transition-colors cursor-pointer">
                         Log Out
                     </button>

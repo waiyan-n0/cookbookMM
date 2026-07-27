@@ -3,6 +3,7 @@ const {Msg} = require('./../utils/helperFunc');
 const { ObjectId } = require('mongodb');
 const mongoose = require("mongoose");
 const likes = require("../models/like_model");
+const comments = require("../models/comment_model");
 
 const createRecipe = async (req, res, next) =>{
     const {
@@ -51,16 +52,47 @@ const getAll = async(req, res, next) => {
         next(new Error('Error getting all recipes.'));
     }
 }
-
-const basedOnType = async(req, res, next) => {
+// const basedOnType = async(req, res, next) => {
+//     try {
+//         const type = req.params.type;
+//         const recipes_list = await recipes.find({
+//             category: { $regex: new RegExp(`^${type}$`, 'i') }
+//         });
+//
+//         Msg(res, "Recipes that are matched with your type!", recipes_list);
+//     } catch(err) {
+//         console.log(err);
+//         next(new Error('Error getting basedOnType!'));
+//     }
+// }
+const basedOnType = async (req, res, next) => {
     try {
         const type = req.params.type;
-        const recipes_list = await recipes.find({
-            category: { $regex: new RegExp(`^${type}$`, 'i') }
-        });
+        const matchQuery = type.toLowerCase() === 'all' ? {} : { category: { $regex: new RegExp(`^${type}$`, 'i') } };
+
+        const recipes_list = await recipes.aggregate([
+            { $match: matchQuery },
+            {
+                // join with comments collection and find same recipe_id
+                $lookup: {
+                    from: 'comments',
+                    localField: '_id',// primary key
+                    foreignField: 'recipe_id', // foreign key from comments
+                    as: 'recipeComments'
+                }
+            },
+            {
+                $addFields: {
+                    commentsCount: { $size: '$recipeComments' }
+                }
+            },
+            {
+                $project: { recipeComments: 0 }
+            }
+        ]);
 
         Msg(res, "Recipes that are matched with your type!", recipes_list);
-    } catch(err) {
+    } catch (err) {
         console.log(err);
         next(new Error('Error getting basedOnType!'));
     }

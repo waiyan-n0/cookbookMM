@@ -46,18 +46,16 @@ const NavBar = ({ clickPf, imgUrl }) => {
         <section className="sticky top-0 z-40 flex items-center justify-between bg-[#FDF3D7]/90 backdrop-blur-md border-b border-[#f5e3b5] py-4 px-6 md:px-12 transition-all duration-300">
 
             <div onClick={() => navigate('/')}
-                 className="webName curlyFont text-2xl md:text-3xl font-medium tracking-wide text-amber-950 cursor-pointer hover:opacity-80 transition-opacity">
+                 className="webName curlyFont text-lg md:text-3xl font-medium tracking-wide text-amber-950 cursor-pointer hover:opacity-80 transition-opacity">
                 Chef mal
             </div>
 
             <nav className="">
-                <ul className="navItems flex items-center space-x-10 text-sm font-medium text-amber-900/80">
+                <ul className="navItems flex items-center space-x-8 text-xs lg:text-lg md:text-lg font-thin text-amber-900/80">
                     <li onClick={() => navigate('/home')}
                         className="cursor-pointer hover:text-amber-950 transition-colors relative after:absolute after:bottom-[-6px] after:left-0 after:w-0 after:h-[2px] after:bg-amber-700 hover:after:w-full after:transition-all">Home</li>
                     <li onClick={() => navigate('/recipes')}
                         className="cursor-pointer hover:text-amber-950 transition-colors relative after:absolute after:bottom-[-6px] after:left-0 after:w-0 after:h-[2px] after:bg-amber-700 hover:after:w-full after:transition-all">Recipes</li>
-                    <li onClick={() => navigate('/blog')}
-                        className="cursor-pointer hover:text-amber-950 transition-colors relative after:absolute after:bottom-[-6px] after:left-0 after:w-0 after:h-[2px] after:bg-amber-700 hover:after:w-full after:transition-all">Blog</li>
                     <li onClick={() => navigate('/about')}
                         className="cursor-pointer hover:text-amber-950 transition-colors relative after:absolute after:bottom-[-6px] after:left-0 after:w-0 after:h-[2px] after:bg-amber-700 hover:after:w-full after:transition-all">About</li>
                 </ul>
@@ -74,7 +72,7 @@ const NavBar = ({ clickPf, imgUrl }) => {
                     </div>
                 ) : (
                     <button onClick={(e) => { loginHandler(e) }}
-                            className="px-5 py-2 text-sm font-semibold text-amber-950 border border-amber-900/30 rounded-full hover:bg-amber-950 hover:text-white transition-all duration-200 active:scale-95 shadow-sm"
+                            className="px-4 py-2 text-[10px] lg:text-sm font-semibold text-amber-950 border border-amber-900/30 rounded-full hover:bg-amber-950 hover:text-white transition-all duration-200 active:scale-95 shadow-sm"
                     >
                         Login
                     </button>

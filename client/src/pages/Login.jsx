@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Footer from "../components/Footer";
+import Notification from "../components/Notification";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -8,6 +9,7 @@ const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [noti, setNoti] = useState({ show: false, msg: "", type: "" });
     const name = username;
 
     const loginHandler = async (e) => {
@@ -22,35 +24,39 @@ const Login = () => {
             });
 
             const data = await response.json();
-            console.log(data);
-
             if (!response.ok) {
-                alert(data.msg || "Login failed");
+                setNoti({ show: true, msg: data.msg || "Login Failed! Please Try Again.", type: "error" });
                 return;
             }
-
             if (response.ok && data.result?.token) {
                 localStorage.setItem('token', data.result.token);
-
                 window.dispatchEvent(new Event('local-storage-update'));
-                alert('Logged In Successful!');
-                navigate('/home');
+                setNoti({ show: true, msg: "Login Successful!", type: "success" });
+                setTimeout(() => {
+                    navigate('/home');
+                }, 2000);
             } else {
                 console.log(data.msg);
-                alert('Login failed');
+                setNoti({ show: true, msg: data.msg || "Login failed", type: "error" });
             }
         } catch (error) {
             console.error("Error during login:", error);
-            alert("Something went wrong. Please try again.");
+            setNoti({ show: true, msg: "Something went wrong. Please try again.", type: "error" });
         }
     };
 
     return (
-        <div className="w-full min-h-screen bg-gradient-to-br from-amber-50/60 to-orange-100/40 flex flex-col justify-between relative">
-
+        <div className="w-full px-4 min-h-screen bg-gradient-to-br from-amber-50/60 to-orange-100/40 flex flex-col justify-between relative">
+            {noti.show && (
+                <div className="fixed top-5 right-5 z-50">
+                    <Notification message={noti.msg} type={noti.type}
+                        onClose={() => setNoti({ show: false, msg: "", type: "" })}
+                    />
+                </div>
+            )}
             <div className="max-w-5xl w-full mx-auto mb-6 flex justify-start mt-8">
                 <button onClick={() => navigate('/home')}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-950 bg-white/60 hover:bg-white border border-amber-900/10 rounded-xl transition-all active:scale-95 shadow-sm cursor-pointer"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-950 bg-white/60 hover:bg-white border border-amber-900/10 rounded-xl transition-all active:scale-95 shadow-sm cursor-pointer"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
@@ -110,10 +116,8 @@ const Login = () => {
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Password</label>
                             <div className='relative'>
-                                <input
-                                    className='w-full border border-gray-200 px-4 py-3 rounded-xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-sm bg-gray-50/50'
-                                    type={showPassword ? 'text' : 'password'} placeholder='Enter your password...'
-                                    required
+                                <input className='w-full border border-gray-200 px-4 py-3 rounded-xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-sm bg-gray-50/50'
+                                    type={showPassword ? 'text' : 'password'} placeholder='Enter your password...' required
                                     onChange={(e) => setPassword(e.target.value)}
                                 />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -136,7 +140,6 @@ const Login = () => {
                                     )}
                                 </button>
                             </div>
-
                         </div>
 
                         <button

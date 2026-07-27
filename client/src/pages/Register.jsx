@@ -1,6 +1,7 @@
-import { useState } from "react";
+import {useState} from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Footer from "../components/Footer";
+import Notification from "../components/Notification";
 
 const Register = () => {
     const navigate = useNavigate();
@@ -9,6 +10,7 @@ const Register = () => {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
+    const [noti, setNoti] = useState({show:false, msg: "",type: ""});
     const name = username;
 
     const submitHandler = async (e) => {
@@ -16,7 +18,7 @@ const Register = () => {
         setError("");
         if (!name || !email || !password) {
             setError("Please fill the form input!");
-            alert('Please fill the form input!');
+            setNoti({show:true, msg: "Please fill all the input fields!",type: "error"});
             return;
         }
         try {
@@ -30,11 +32,14 @@ const Register = () => {
             const data = await response.json();
             console.log(data);
             if (!response.ok) {
-                alert(data.msg);
+                // alert(data.msg);
+                setNoti({show:true, msg: "Registration Failed! Please Try Again.",type: "error"});
                 return;
             }
-            alert('Registration Successful!');
-            navigate('/login');
+            setNoti({show:true,msg: "Registration Successful! Redirecting to Login Page...",type: "success" });
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000);
         } catch (err) {
             console.log(err.message);
             setError("Server error occurred");
@@ -42,11 +47,14 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-amber-50/60 to-orange-100/40 flex flex-col justify-between p-4 md:p-8 relative animate-fade-in">
-
+        <div className="min-h-screen px-4 bg-gradient-to-br from-amber-50/60 to-orange-100/40 flex flex-col justify-between p-4 md:p-8 relative animate-fade-in">
+            {noti.show && (
+                <div className="fixed top-5 right-5 z-50">
+                    <Notification message={noti.msg} type={noti.type} onClose={() => setNoti({ show: false, msg: "", type: "" })}/>
+                </div>
+            )}
             <div className="max-w-5xl w-full mx-auto mb-6 flex justify-start">
-                <button
-                    onClick={() => navigate('/home')}
+                <button onClick={() => navigate('/home')}
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-950 bg-white/60 hover:bg-white border border-amber-900/10 rounded-xl transition-all duration-300 active:scale-95 shadow-sm cursor-pointer"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
