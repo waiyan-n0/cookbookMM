@@ -29,10 +29,10 @@ The platform is designed to make cooking simple and approachable for beginners w
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** React.js, HTML5, CSS3/Tailwind, Axios
+- **Frontend:** React.js, HTML5, CSS3/Tailwind
 - **Backend:** Node.js, Express.js
 - **Database:** MongoDB (via Mongoose ORM)
-- **Authentication:** JWT (JSON Web Tokens) / Express Sessions
+- **Authentication:** JWT (JSON Web Tokens)
 
 ---
 
