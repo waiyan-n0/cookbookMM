@@ -210,6 +210,79 @@ const searchWithAnything = async (req, res, next) => {
         next(new Error('Error searching recipes!'));
     }
 };
+const getLovedRecipes = async (req, res, next) => {
+    try {
+        const userId = req.userId;
+        if (!userId) {
+            return next(new Error('User authentication required!'));
+        }
+
+        // Handle both ObjectId and String formats in MongoDB
+        const userObjectId = mongoose.Types.ObjectId.isValid(userId)
+            ? new mongoose.Types.ObjectId(userId)
+            : userId;
+        const userStringId = userId.toString();
+
+        const lovedRecipes = await likes.aggregate([
+            {
+                // Match reactor_id (or user_id) as either ObjectId or String
+                $match: {
+                    $or: [
+                        { reactor_id: userObjectId },
+                        { reactor_id: userStringId },
+                        { user_id: userObjectId },
+                        { user_id: userStringId }
+                    ]
+                }
+            },
+            {
+                $lookup: {
+                    from: 'recipes',
+                    localField: 'recipe_id',
+                    foreignField: '_id',
+                    as: 'recipeDetail'
+                }
+            },
+            {
+                $unwind: '$recipeDetail'
+            },
+            {
+                $lookup: {
+                    from: 'comments',
+                    localField: 'recipeDetail._id',
+                    foreignField: 'recipe_id',
+                    as: 'recipeComments'
+                }
+            },
+            {
+                $project: {
+                    _id: '$recipeDetail._id',
+                    recipe_name: '$recipeDetail.recipe_name',
+                    author: '$recipeDetail.author',
+                    category: '$recipeDetail.category',
+                    difficulty: '$recipeDetail.difficulty',
+                    serving: '$recipeDetail.serving',
+                    ingredients: '$recipeDetail.ingredients',
+                    instructions: '$recipeDetail.instructions',
+                    prepTime: '$recipeDetail.prepTime',
+                    cookingTime: '$recipeDetail.cookingTime',
+                    image: '$recipeDetail.image',
+                    likes: '$recipeDetail.likes',
+                    isLiked: { $literal: true }, // Always true in saved/loved view
+                    commentsCount: { $size: '$recipeComments' },
+                    createdAt: '$recipeDetail.createdAt',
+                    updatedAt: '$recipeDetail.updatedAt'
+                }
+            }
+        ]);
+
+        Msg(res, "Loved recipes fetched successfully!", lovedRecipes);
+    } catch (err) {
+        console.log('Error fetching loved recipes:', err);
+        next(new Error('Error fetching loved recipes!'));
+    }
+};
+
 module.exports = {
     getAll,
     createRecipe,
@@ -217,5 +290,6 @@ module.exports = {
     getRecipeDetails,
     getMyRecipes,
     basedOnType,
-    editRecipe,searchWithAnything
+    editRecipe,searchWithAnything,
+    getLovedRecipes
 }

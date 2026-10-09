@@ -16,13 +16,18 @@ const Profile = () => {
     const [currentView, setCurrentView] = useState("myList");
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-    // Edit Modal & Form State များ
+    // Edit Modal & Form State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editName, setEditName] = useState("");
     const [isUpdating, setIsUpdating] = useState(false);
 
+    // Loved Recipes State
+    const [lovedRecipes, setLovedRecipes] = useState([]);
+    const [loadingLoved, setLoadingLoved] = useState(false);
+
     const [noti, setNoti] = useState({ show: false, msg: '', type: '' });
     const fileInputRef = useRef(null);
+    const token = localStorage.getItem('token');
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
@@ -38,7 +43,7 @@ const Profile = () => {
             const fileExtension = file.name.split(".").pop();
             const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExtension}`;
             const filePath = `store_users_pf/${uniqueFileName}`;
-            const { data: uploadData, err: uploadError } = await supabase.storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('users_pf')
                 .upload(filePath, file);
 
@@ -54,7 +59,7 @@ const Profile = () => {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     userId: user._id,
@@ -86,7 +91,7 @@ const Profile = () => {
         fetch("http://localhost:3000/users/me", {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
+                Authorization: `Bearer ${token}`,
             },
         })
             .then((response) => {
@@ -107,6 +112,58 @@ const Profile = () => {
             });
     };
 
+    // Fetch Loved/Liked Recipes for Saved Recipes View
+    const getLovedRecipes = async () => {
+        setLoadingLoved(true);
+        try {
+            const response = await fetch("http://localhost:3000/recipes/user/likes", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            const data = await response.json();
+            if (response.ok && data.con) {
+                setLovedRecipes(data.result || []);
+            } else {
+                setLovedRecipes([]);
+            }
+        } catch (err) {
+            console.error("Error fetching loved recipes:", err);
+            setNoti({ show: true, msg: "Failed to load saved recipes.", type: "error" });
+        } finally {
+            setLoadingLoved(false);
+        }
+    };
+
+    // Handle like/unlike toggle directly inside Saved Recipes
+    const toggleLike = async (e, recipeId) => {
+        e.stopPropagation();
+        if (!token) return;
+
+        // Optimistically remove from saved list if unliking
+        setLovedRecipes(prev => prev.filter(r => r._id !== recipeId));
+
+        try {
+            const response = await fetch("http://localhost:3000/interactions/like", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ recipe_id: recipeId })
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.con) {
+                // Refresh if toggle failed
+                getLovedRecipes();
+            }
+        } catch (error) {
+            console.error("Error toggling like:", error);
+            getLovedRecipes();
+        }
+    };
+
     const updateUser = async (e) => {
         e.preventDefault();
         if (!editName.trim()) {
@@ -120,7 +177,7 @@ const Profile = () => {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     name: editName,
@@ -144,7 +201,15 @@ const Profile = () => {
         }
     };
 
-    useEffect(() => { getUser(); }, []);
+    useEffect(() => {
+        getUser();
+    }, []);
+
+    useEffect(() => {
+        if (currentView === "savedList") {
+            getLovedRecipes();
+        }
+    }, [currentView]);
 
     const logout = () => {
         setNoti({ show: true, msg: 'Your account is logging out!', type: 'success' });
@@ -167,15 +232,104 @@ const Profile = () => {
             <main className="flex-1 w-full max-w-8xl mx-auto p-6 md:p-10 space-y-6">
                 <div className="border-b border-slate-200 pb-4">
                     <h1 className="text-2xl font-black text-slate-800 tracking-tight capitalize">
-                        {currentView === "myList" ? "Your Recipes" : "Saved Recipes Collection"}
+                        {currentView === "myList" ? "Your Recipes" : "Loved & Saved Recipes"}
                     </h1>
                     <p className="text-xs text-slate-400 mt-1">
-                        {currentView === "myList" ? "Recipes that are created by you.🧑🏼‍🍳" : "Recipes you have bookmarked to try later"}
+                        {currentView === "myList" ? "Recipes that are created by you.🧑🏼‍🍳" : "Collection of recipes you have loved and saved.❤️"}
                     </p>
                 </div>
 
                 <section className="w-full pt-2">
-                    <RecipeList type={currentView} id={user._id} />
+                    {currentView === "myList" ? (
+                        <RecipeList type="myList" id={user._id} />
+                    ) : (
+                        loadingLoved ? (
+                            <div className="flex h-48 items-center justify-center text-slate-400 animate-pulse">
+                                Loading loved recipes...
+                            </div>
+                        ) : lovedRecipes.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center bg-amber-50/40 border border-dashed border-amber-200 rounded-2xl p-10 my-4 text-center">
+                                <div className="p-3 bg-red-100 rounded-full text-red-500 mb-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6">
+                                        <path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-800 mb-1">No Loved Recipes Yet!</h3>
+                                <p className="text-sm text-slate-500 max-w-sm">
+                                    You haven't liked any recipes yet. Browse recipes and tap the heart icon to save your favorites here!
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-row flex-wrap gap-6 justify-start">
+                                {lovedRecipes.map((recipe) => (
+                                    <div
+                                        key={recipe._id}
+                                        onClick={() => navigate(`/recipes/${recipe._id}`)}
+                                        className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer w-full max-w-xs"
+                                    >
+                                        <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
+                                            <img
+                                                src={recipe.image}
+                                                alt={recipe.recipe_name}
+                                                className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+                                                onError={(e) => { e.target.src = 'https://placehold.co/600x400?text=Recipe+Image'; }}
+                                            />
+                                        </div>
+
+                                        <div className="p-4">
+                                            <div className="mb-3 flex items-start justify-between gap-2">
+                                                <div className="group/name relative flex-1">
+                                                    <h3 className="font-semibold text-gray-800 text-base line-clamp-1 transition-colors group-hover/name:text-amber-600">
+                                                        {recipe.recipe_name}
+                                                    </h3>
+                                                    {recipe.category && (
+                                                        <div className="absolute left-0 -top-7 opacity-0 translate-y-1 group-hover/name:opacity-100 group-hover/name:translate-y-0 transition-all duration-200 pointer-events-none z-10">
+                                                            <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md capitalize tracking-wide flex items-center gap-1">
+                                                                {Array.isArray(recipe.category) ? recipe.category[0] : recipe.category}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-1 text-xs font-medium text-gray-500 shrink-0 bg-gray-50 px-2 py-1 rounded-md">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 text-amber-500">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                                                    </svg>
+                                                    <span>{recipe.cookingTime || 0} mins</span>
+                                                </div>
+                                            </div>
+
+                                            <hr className="border-gray-100 my-2"/>
+
+                                            <div className="flex items-center justify-around text-sm text-gray-600 pt-1">
+                                                <button
+                                                    onClick={(e) => toggleLike(e, recipe._id)}
+                                                    className="flex items-center gap-1.5 transition-colors py-1 px-2 rounded-md hover:bg-gray-50 text-red-500 font-semibold cursor-pointer"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
+                                                    </svg>
+                                                    <span className="text-xs font-medium">
+                                                        {Array.isArray(recipe.likes) ? recipe.likes.length : (recipe.likes || 1)} {(Array.isArray(recipe.likes) ? recipe.likes.length : (recipe.likes || 1)) === 1 ? 'like' : 'likes'}
+                                                    </span>
+                                                </button>
+
+                                                <span className="text-gray-300" aria-hidden="true">|</span>
+
+                                                <button className="flex items-center gap-1.5 hover:text-blue-500 transition-colors py-1 px-2 rounded-md hover:bg-gray-50">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48L4.32 19.8c-.11.353.17.65.514.543l2.582-.805c1.333.456 2.793.712 4.284.712Z"/>
+                                                    </svg>
+                                                    <span className="text-xs font-medium">
+                                                        {recipe.commentsCount || 0} {(recipe.commentsCount || 0) === 1 ? 'comment' : 'comments'}
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    )}
                 </section>
             </main>
 
@@ -192,10 +346,8 @@ const Profile = () => {
                     </button>
                 </div>
                 <div className="p-6 border-b border-slate-100 bg-linear-to-b from-slate-50 to-white relative group">
-                    <button onClick={() => {setEditName(user?.name || "");
-                            setIsEditModalOpen(true);
-                        }} aria-label="Edit profile"
-                        className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                    <button onClick={() => { setEditName(user?.name || ""); setIsEditModalOpen(true); }} aria-label="Edit profile"
+                            className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />

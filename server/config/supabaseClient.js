@@ -1,8 +1,6 @@
-// server/config/supabaseClient.js
+// server
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
-
-// Provide WebSocket support for Node.js < 22 environment
 global.WebSocket = require('ws');
 
 const supabaseUrl = process.env.SUPABASE_URL;

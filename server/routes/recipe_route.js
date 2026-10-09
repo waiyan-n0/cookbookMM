@@ -14,5 +14,6 @@ router.put('/:id', recipeController.editRecipe);
 router.delete('/:id', recipeController.deleteRecipe);
 
 router.get('/:_id', recipeController.getRecipeDetails);
+router.get('/user/likes', verifyToken, recipeController.getLovedRecipes);
 
 module.exports = router;

@@ -9,6 +9,7 @@ const Home = () =>{
         <div>
             <NavBar/>
             <HomeBanner/>
+            <RecipeCard type={'Main Dishes'} />
             <RecipeCard type={'Drinks'} />
             <RecipeCard type={'Soup'} />
             <Footer/>

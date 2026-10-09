@@ -7,10 +7,15 @@ import Notification from "./Notification.jsx";
 const RecipeCard = ({ type }) => {
     const navigate = useNavigate();
     const [recipes, setRecipes] = useState([]);
+    const [allFetchedRecipes, setAllFetchedRecipes] = useState([]); // Store original full list for local filtering
     const [loading, setLoading] = useState(true);
     const [noti, setNoti] = useState({ show: false, msg: "", type: "" });
-    const token = localStorage.getItem("token");
 
+    // Filter States
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("all");
+
+    const token = localStorage.getItem("token");
     const sliderRef = useRef(null);
     const isAllType = type === "all";
 
@@ -21,6 +26,7 @@ const RecipeCard = ({ type }) => {
             .then(data => {
                 const fetchedRecipes = data.result || [];
                 setRecipes(fetchedRecipes);
+                setAllFetchedRecipes(fetchedRecipes);
                 setLoading(false);
 
                 if (token && fetchedRecipes.length > 0) {
@@ -31,9 +37,11 @@ const RecipeCard = ({ type }) => {
                             .then(res => res.json())
                             .then(statusData => {
                                 if (statusData.con) {
-                                    setRecipes(prev => prev.map(r =>
+                                    const updateRecipes = prev => prev.map(r =>
                                         r._id === recipe._id ? { ...r, isLiked: statusData.result.isLiked } : r
-                                    ));
+                                    );
+                                    setRecipes(updateRecipes);
+                                    setAllFetchedRecipes(updateRecipes);
                                 }
                             })
                             .catch(err => console.error("Error fetching like status:", err));
@@ -64,17 +72,21 @@ const RecipeCard = ({ type }) => {
             setNoti({ show: true, msg: "You need to login to like this post!", type: 'error' });
             return;
         }
-        setRecipes(prevRecipes => prevRecipes.map(recipe => {
+
+        const updateLikeState = prev => prev.map(recipe => {
             if (recipe._id === recipeId) {
-                const currentLikes = recipe.likes || 0;
+                const currentLikes = typeof recipe.likes === 'number' ? recipe.likes : (recipe.likes?.length || 0);
                 return {
                     ...recipe,
                     isLiked: !isLiked,
-                    likes: isLiked ? currentLikes - 1 : currentLikes + 1,
+                    likes: isLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1,
                 };
             }
             return recipe;
-        }));
+        });
+
+        setRecipes(updateLikeState);
+        setAllFetchedRecipes(updateLikeState);
 
         try {
             const response = await fetch("http://localhost:3000/interactions/like", {
@@ -90,38 +102,67 @@ const RecipeCard = ({ type }) => {
             if (!response.ok) return new Error("API Error");
 
             if (data.con) {
-                setRecipes(prevRecipes => prevRecipes.map(recipe =>
+                const syncServerLikes = prev => prev.map(recipe =>
                     recipe._id === recipeId ? { ...recipe, isLiked: data.result.isLiked, likes: data.result.likes_count } : recipe
-                ));
+                );
+                setRecipes(syncServerLikes);
+                setAllFetchedRecipes(syncServerLikes);
             }
         } catch (error) {
             console.error("Error toggling like:", error);
             setNoti({ show: true, msg: 'Error giving like!', type: 'error' });
-            setRecipes(prevRecipes => prevRecipes.map(recipe => {
+            const revertLikeState = prev => prev.map(recipe => {
                 if (recipe._id === recipeId) {
-                    const currentLikes = recipe.likes || 0;
+                    const currentLikes = typeof recipe.likes === 'number' ? recipe.likes : (recipe.likes?.length || 0);
                     return {
                         ...recipe,
                         isLiked: isLiked,
-                        likes: isLiked ? currentLikes + 1 : currentLikes - 1
+                        likes: isLiked ? currentLikes + 1 : Math.max(0, currentLikes - 1)
                     };
                 }
                 return recipe;
-            }));
+            });
+            setRecipes(revertLikeState);
+            setAllFetchedRecipes(revertLikeState);
         }
     };
-    const fetchSearchResults = async (query) => {
-        if (!query.trim()) return;
+
+    // Combined Search + Category Filter Handler
+    const handleFilter = async (query, category) => {
+        setSearchQuery(query);
+        setSelectedCategory(category);
+
+        if (!query.trim()) {
+            // Apply category filter to the original full fetched array
+            if (category === "all") {
+                setRecipes(allFetchedRecipes);
+            } else {
+                setRecipes(allFetchedRecipes.filter(r => {
+                    const rCat = Array.isArray(r.category) ? r.category[0] : r.category;
+                    return rCat?.toLowerCase() === category.toLowerCase();
+                }));
+            }
+            return;
+        }
+
         try {
             const res = await fetch(`http://localhost:3000/recipes/search?q=${encodeURIComponent(query)}`);
             const data = await res.json();
             if (data.con) {
-                setRecipes(data.result);
+                let results = data.result || [];
+                if (category !== "all") {
+                    results = results.filter(r => {
+                        const rCat = Array.isArray(r.category) ? r.category[0] : r.category;
+                        return rCat?.toLowerCase() === category.toLowerCase();
+                    });
+                }
+                setRecipes(results);
             }
         } catch (err) {
             console.error("Search error:", err);
         }
     };
+
     const goDetail = async (recipe) => {
         if (!token) {
             setNoti({ show: true, msg: 'You need to login to see the recipe\'s details and instructions! ', type: 'error' });
@@ -147,13 +188,40 @@ const RecipeCard = ({ type }) => {
                 </div>
             )}
 
-            <h1 className='px-8 py-2 flex items-center justify-between'>
+            <h1 className='px-8 py-2 flex flex-col md:flex-row md:items-center justify-between gap-4'>
                 <span className='font-bold text-2xl capitalize underline'>{type}</span>
-                {type==="all" ? (
-                    <input className='border-1 rounded-xl border-gray-500 outline-0 p-2 mr-26' type="text" placeholder='Search...'
-                    onChange={(e)=>fetchSearchResults(e.target.value)}
-                    />
-                ) : (<div></div>)}
+
+                {/* Search Bar & Category Dropdown */}
+                {isAllType && (
+                    <div className="flex items-center gap-3">
+                        {/* Category Dropdown */}
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) => handleFilter(searchQuery, e.target.value)}
+                            className="border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-700 shadow-sm cursor-pointer"
+                        >
+                            <option value="all">All Categories</option>
+                            <option value="Soup">Soup</option>
+                            <option value="Main Dishes">Main Dishes</option>
+                            <option value="Snacks">Snacks</option>
+                            <option value="Drinks">Drinks</option>
+                        </select>
+
+                        {/* Search Input */}
+                        <div className="relative">
+                            <input
+                                className='border border-gray-300 rounded-xl outline-none py-2 pl-9 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-amber-500 shadow-sm w-48 sm:w-64'
+                                type="text"
+                                value={searchQuery}
+                                placeholder='Search recipes...'
+                                onChange={(e) => handleFilter(e.target.value, selectedCategory)}
+                            />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                            </svg>
+                        </div>
+                    </div>
+                )}
             </h1>
 
             {recipes.length === 0 ? (
@@ -165,7 +233,7 @@ const RecipeCard = ({ type }) => {
                     </div>
                     <h3 className="text-lg font-bold text-amber-900 mb-1">No Related Recipes Found!</h3>
                     <p className="text-sm text-amber-700/80 max-w-sm">
-                        We couldn't find any recipes under the <span className="font-semibold text-amber-900">"{type}"</span> category right now. Stay tuned or try creating one yourself now!
+                        We couldn't find any recipes under <span className="font-semibold text-amber-900">"{selectedCategory === 'all' ? type : selectedCategory}"</span> right now. Try adjusting your search query or filter!
                     </p>
                 </div>
             ) : (
@@ -173,7 +241,7 @@ const RecipeCard = ({ type }) => {
                     {!isAllType && recipes.length > 4 && (
                         <>
                             <button onClick={() => slide('left')}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-gray-100 text-gray-700 hover:bg-amber-500 hover:text-white transition-all duration-300 hover:scale-110 cursor-pointer" title="Previous"
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-gray-100 text-gray-700 hover:bg-amber-500 hover:text-white transition-all duration-300 hover:scale-110 cursor-pointer" title="Previous"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
@@ -181,7 +249,7 @@ const RecipeCard = ({ type }) => {
                             </button>
 
                             <button onClick={() => slide('right')}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-gray-100 text-gray-700 hover:bg-amber-500 hover:text-white transition-all duration-300 hover:scale-110 cursor-pointer" title="Next"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 backdrop-blur-md shadow-lg border border-gray-100 text-gray-700 hover:bg-amber-500 hover:text-white transition-all duration-300 hover:scale-110 cursor-pointer" title="Next"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
@@ -190,13 +258,13 @@ const RecipeCard = ({ type }) => {
                         </>
                     )}
                     <div ref={sliderRef} style={!isAllType ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : {}}
-                        className={ isAllType ? "flex flex-row flex-wrap gap-6 justify-start" : "flex overflow-x-auto gap-6 scroll-smooth snap-x snap-mandatory no-scrollbar pb-2"}
+                         className={ isAllType ? "flex flex-row flex-wrap gap-6 justify-start" : "flex overflow-x-auto gap-6 scroll-smooth snap-x snap-mandatory no-scrollbar pb-2"}
                     >
                         {recipes.map((recipe) => (
                             <div key={recipe._id} onClick={() => goDetail(recipe)}
-                                className={`overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer ${
-                                    isAllType ? "w-full max-w-xs" : "w-full min-w-[260px] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)] shrink-0 snap-start"
-                                }`}
+                                 className={`overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer ${
+                                     isAllType ? "w-full max-w-xs" : "w-full min-w-[260px] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)] shrink-0 snap-start"
+                                 }`}
                             >
                                 <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
                                     <img src={recipe.image} alt={recipe.recipe_name}
@@ -216,7 +284,7 @@ const RecipeCard = ({ type }) => {
                                             {recipe.category && (
                                                 <div className="absolute left-0 -top-7 opacity-0 translate-y-1 group-hover/name:opacity-100 group-hover/name:translate-y-0 transition-all duration-200 pointer-events-none z-10">
                                                     <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md capitalize tracking-wide flex items-center gap-1">
-                                                        {recipe.category}
+                                                        {Array.isArray(recipe.category) ? recipe.category[0] : recipe.category}
                                                     </span>
                                                 </div>
                                             )}

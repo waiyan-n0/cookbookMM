@@ -24,7 +24,8 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
 
     if (!isOpen) return null;
 
-    const addIngredient = () => setIngredients([...ingredients, { name: "", amount: "", unit: "cups" }]);
+    // Updated: Default unit to empty string for custom input
+    const addIngredient = () => setIngredients([...ingredients, { name: "", amount: "1", unit: "" }]);
     const removeIngredient = (index) => setIngredients(ingredients.filter((_, i) => i !== index));
     const addInstruction = () => setInstructions([...instructions, ""]);
     const removeInstruction = (index) => setInstructions(instructions.filter((_, i) => i !== index));
@@ -61,13 +62,11 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
         try {
             let publicUrl = imgUrl;
 
-            // If a new file is uploaded
             if (imageFile) {
                 const fileExtension = imageFile.name.split(".").pop();
                 const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExtension}`;
                 const filePath = `store_recipes/${uniqueFileName}`;
 
-                // CRITICAL FIX: Destructure 'error' properly (was 'err')
                 const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('recipe_imgs')
                     .upload(filePath, imageFile, { upsert: true });
@@ -80,7 +79,7 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                         msg: `Image Upload Failed: ${uploadError.message}. Check Supabase project connection.`,
                         type: "error"
                     });
-                    return; // Stop execution here - do not hit MongoDB!
+                    return;
                 }
 
                 const { data: urlData } = supabase.storage
@@ -172,7 +171,8 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                                 <option value="" disabled>Choose Category</option>
                                 <option value="Soup">Soup</option>
                                 <option value="Main Dishes">Main Dishes</option>
-                                <option value="Snacks">Snacks</option>
+                                <option value="European Food">European Food</option>
+                                <option value="Traditional Food">Traditional Food</option>
                                 <option value="Drinks">Drinks</option>
                                 <option value="Other">Other (Custom Category)</option>
                             </select>
@@ -207,41 +207,38 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                                        onChange={(e) => setServing(Math.max(0, parseInt(e.target.value) || 0))}
                                        className="block w-full border-0 py-2.5 pl-3 pr-12 text-sm text-center focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
-                                <span className="absolute right-12 text-xs font-medium text-slate-400 pointer-events-none">Servings</span>
                                 <button type="button" onClick={() => setServing(prev => Number(prev || 0) + 1)}
                                         className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-l border-slate-100"
                                 >+</button>
                             </div>
                         </div>
                         <div className="flex-1">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Preparation Time</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase">Preparation(min)</label>
                             <div className="relative mt-1.5 flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500">
                                 <button type="button" onClick={() => setPrepTime(prev => Math.max(0, Number(prev || 0) - 5))}
-                                        className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-r border-slate-100"
+                                        className="px-2 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-r border-slate-100"
                                 >—</button>
                                 <input type="number" name="prepTime" value={prepTime}
                                        onChange={(e) => setPrepTime(Math.max(0, parseInt(e.target.value) || 0))}
                                        className="block w-full border-0 py-2.5 pl-3 pr-12 text-sm text-center focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
-                                <span className="absolute right-12 text-xs font-medium text-slate-400 pointer-events-none">mins</span>
                                 <button type="button" onClick={() => setPrepTime(prev => Number(prev || 0) + 5)}
-                                        className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-l border-slate-100"
+                                        className="px-2 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-l border-slate-100"
                                 >+</button>
                             </div>
                         </div>
                         <div className="flex-1">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Cooking Time</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase">Cooking Time(min)</label>
                             <div className="relative mt-1.5 flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500">
                                 <button type="button" onClick={() => setCookingTime(prev => Math.max(0, Number(prev || 0) - 5))}
-                                        className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-r border-slate-100"
+                                        className="px-2 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-r border-slate-100"
                                 >—</button>
                                 <input type="number" name="cookingTime" value={cookingTime}
                                        onChange={(e) => setCookingTime(Math.max(0, parseInt(e.target.value) || 0))}
                                        className="block w-full border-0 py-2.5 pl-3 pr-12 text-sm text-center focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
-                                <span className="absolute right-12 text-xs font-medium text-slate-400 pointer-events-none">mins</span>
                                 <button type="button" onClick={() => setCookingTime(prev => Number(prev || 0) + 5)}
-                                        className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-l border-slate-100"
+                                        className="px-2 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-l border-slate-100"
                                 >+</button>
                             </div>
                         </div>
@@ -276,7 +273,7 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
-                                    <th className="p-3 w-7/12">Ingredient Name</th>
+                                    <th className="p-3 w-5/12">Ingredient Name</th>
                                     <th className="p-3 w-2/12">Amount</th>
                                     <th className="p-3 w-2/12">Unit</th>
                                     <th className="p-3 w-1/12 text-center"></th>
@@ -289,17 +286,28 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                                             <input type="text" value={ing.name} onChange={(e) => { const updated = [...ingredients]; updated[index].name = e.target.value; setIngredients(updated); }} placeholder="e.g. Chicken" className="w-full bg-transparent border-0 focus:ring-0 p-1 font-medium text-slate-700 placeholder-slate-300" />
                                         </td>
                                         <td className="p-2">
-                                            <input type="text" value={ing.amount} onChange={(e) => { const updated = [...ingredients]; updated[index].amount = e.target.value; setIngredients(updated); }} placeholder="0" className="w-full bg-transparent border-0 focus:ring-0 p-1 font-medium text-slate-700 placeholder-slate-300" />
+                                            <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500">
+                                                <button type="button" onClick={() => {
+                                                    const updated = [...ingredients];
+                                                    const currentVal = Number(updated[index].amount) || 0;
+                                                    updated[index].amount = Math.max(0, currentVal - 1).toString();
+                                                    setIngredients(updated);
+                                                }} className="px-2 py-1 text-slate-500 hover:bg-slate-100 font-bold transition-colors border-r border-slate-100 text-xs">—</button>
+                                                <input type="number" value={ing.amount} onChange={(e) => {
+                                                    const updated = [...ingredients];
+                                                    updated[index].amount = e.target.value;
+                                                    setIngredients(updated);
+                                                }} placeholder="0" className="w-full bg-transparent border-0 focus:ring-0 p-1 font-medium text-slate-700 placeholder-slate-300 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                                                <button type="button" onClick={() => {
+                                                    const updated = [...ingredients];
+                                                    const currentVal = Number(updated[index].amount) || 0;
+                                                    updated[index].amount = (currentVal + 1).toString();
+                                                    setIngredients(updated);
+                                                }} className="px-2 py-1 text-slate-500 hover:bg-slate-100 font-bold transition-colors border-l border-slate-100 text-xs">+</button>
+                                            </div>
                                         </td>
                                         <td className="p-2">
-                                            <select value={ing.unit} onChange={(e) => { const updated = [...ingredients]; updated[index].unit = e.target.value; setIngredients(updated); }} className="w-full bg-transparent border-0 focus:ring-0 p-1 font-medium text-slate-600 cursor-pointer">
-                                                <option value="cups">cups</option>
-                                                <option value="table spoons">table spoon</option>
-                                                <option value="grams">grams</option>
-                                                <option value="pieces">pieces</option>
-                                                <option value="liters">liters</option>
-                                                <option value="milliliters">milliliters</option>
-                                            </select>
+                                            <input type="text" value={ing.unit} onChange={(e) => { const updated = [...ingredients]; updated[index].unit = e.target.value; setIngredients(updated); }} placeholder="e.g.cups, grams" className="w-full bg-transparent border-0 focus:ring-0 p-1 font-medium text-slate-700 placeholder-slate-300" />
                                         </td>
                                         <td className="p-2 text-center">
                                             <button type="button" onClick={() => removeIngredient(index)} className="text-slate-300 hover:text-red-500 transition-colors p-1">&times;</button>
