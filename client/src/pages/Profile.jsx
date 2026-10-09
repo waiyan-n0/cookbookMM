@@ -152,7 +152,7 @@ const Profile = () => {
         setTimeout(() => {
             localStorage.clear();
             window.dispatchEvent(new Event('local-storage-update'));
-            navigate('/home');
+            navigate('/');
         }, 2000);
     };
 

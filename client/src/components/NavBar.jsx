@@ -52,7 +52,7 @@ const NavBar = ({ clickPf, imgUrl }) => {
 
             <nav className="">
                 <ul className="navItems flex items-center space-x-8 text-xs lg:text-lg md:text-lg font-thin text-amber-900/80">
-                    <li onClick={() => navigate('/home')}
+                    <li onClick={() => navigate('/')}
                         className="cursor-pointer hover:text-amber-950 transition-colors relative after:absolute after:bottom-[-6px] after:left-0 after:w-0 after:h-[2px] after:bg-amber-700 hover:after:w-full after:transition-all">Home</li>
                     <li onClick={() => navigate('/recipes')}
                         className="cursor-pointer hover:text-amber-950 transition-colors relative after:absolute after:bottom-[-6px] after:left-0 after:w-0 after:h-[2px] after:bg-amber-700 hover:after:w-full after:transition-all">Recipes</li>

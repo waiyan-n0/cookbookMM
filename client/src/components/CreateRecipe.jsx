@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "./../config/supabaseClient.js";
 import Notification from "./Notification.jsx";
 
-const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
+const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
     const [recipeName, setRecipeName] = useState(selectedRecipe?.recipe_name || "");
 
     const cat = selectedRecipe?.category?.[0] || "";
@@ -19,7 +19,7 @@ const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
     const [instructions, setInstructions] = useState(selectedRecipe?.instructions || []);
     const [imgUrl, setImgUrl] = useState(selectedRecipe?.image || "");
     const [imageFile, setImageFile] = useState(null);
-    const [noti, setNoti] = useState({show:false, msg:"",type:""});
+    const [noti, setNoti] = useState({ show: false, msg: "", type: "" });
     const [loading, setLoading] = useState(false);
 
     if (!isOpen) return null;
@@ -31,46 +31,63 @@ const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        if (file && file.size <= 5 * 1024 * 1024) {
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                setNoti({ show: true, msg: 'File is too large! Maximum limit is 5MB.', type: "error" });
+                return;
+            }
             setImageFile(file);
             setImgUrl(URL.createObjectURL(file));
-        } else {
-            setNoti({show:true, msg:'File is too large! Maximum limit is 5MB.',type: "error"});
         }
     };
+
     const createRecipeHandler = async (e) => {
         e.preventDefault();
 
-        if(loading) return;
+        if (loading) return;
 
         if (!imageFile && !imgUrl) {
-            // alert('Please upload an image for your recipe!');
-            setNoti({show:true, msg:"Please Upload an image for your recipe!",type:"error"});
+            setNoti({ show: true, msg: "Please upload an image for your recipe!", type: "error" });
             return;
         }
-        setLoading(true);
+
         if (category === "Other" && !customCategory.trim()) {
             setNoti({ show: true, msg: "Please enter your custom category name!", type: "error" });
             return;
         }
+
+        setLoading(true);
+
         try {
             let publicUrl = imgUrl;
-            //if new image, upload to supabase
+
+            // If a new file is uploaded
             if (imageFile) {
                 const fileExtension = imageFile.name.split(".").pop();
                 const uniqueFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExtension}`;
                 const filePath = `store_recipes/${uniqueFileName}`;
-                const { data: uploadData, err: uploadError } = await supabase.storage.from('recipe_imgs').upload(filePath, imageFile);
-                console.log(uploadData);
+
+                // CRITICAL FIX: Destructure 'error' properly (was 'err')
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('recipe_imgs')
+                    .upload(filePath, imageFile, { upsert: true });
+
                 if (uploadError) {
-                    console.log(uploadError);
+                    console.error("Supabase Storage Error:", uploadError);
                     setLoading(false);
-                    setNoti({show:true, msg:"Image Uploading Error! Try Again.",type:"error"});
-                    return new Error('Image uploading Error!');
+                    setNoti({
+                        show: true,
+                        msg: `Image Upload Failed: ${uploadError.message}. Check Supabase project connection.`,
+                        type: "error"
+                    });
+                    return; // Stop execution here - do not hit MongoDB!
                 }
 
-                const { data: { publicUrl: newUrl } } = supabase.storage.from('recipe_imgs').getPublicUrl(filePath);
-                publicUrl = newUrl;
+                const { data: urlData } = supabase.storage
+                    .from('recipe_imgs')
+                    .getPublicUrl(filePath);
+
+                publicUrl = urlData.publicUrl;
             }
 
             const payload = {
@@ -93,8 +110,6 @@ const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
             const apiUrl = isUpdate ? `http://localhost:3000/recipes/${selectedRecipe._id}` : 'http://localhost:3000/recipes';
             const apiMethod = isUpdate ? 'PUT' : 'POST';
 
-            //console.log(`${apiMethod} Payload: `, payload);
-
             const response = await fetch(apiUrl, {
                 method: apiMethod,
                 headers: { 'Content-Type': 'application/json' },
@@ -102,25 +117,25 @@ const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
             });
 
             const recipesData = await response.json();
+
             if (!response.ok) {
-                //alert(recipesData.msg);
                 setLoading(false);
-                setNoti({show:true, msg:`${recipesData.msg}`,type:"error"});
-                return new Error(`Fail to ${apiMethod} Recipe`);
+                setNoti({ show: true, msg: `${recipesData.msg || 'Failed to save recipe'}`, type: "error" });
             } else {
-                setNoti({show:true, msg:`${recipesData.msg || 'Recipe saved successfully!'}`, type:"success"});
+                setNoti({ show: true, msg: `${recipesData.msg || 'Recipe saved successfully!'}`, type: "success" });
                 setTimeout(() => {
-                    setLoading(false); onClose();
+                    setLoading(false);
+                    onClose();
                     window.location.reload();
                 }, 1500);
             }
         } catch (err) {
-            console.log(err.message);
+            console.error("Error creating/updating recipe:", err);
             setLoading(false);
-            setNoti({show:true, msg:"An unexpected error occurred in our system. Sorry!",type:"error"});
+            setNoti({ show: true, msg: "Network error or Supabase connection timed out.", type: "error" });
         }
     };
-    //console.log('loading: ',loading);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs overflow-y-auto">
             {noti.show && (
@@ -132,7 +147,7 @@ const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
             <form onSubmit={createRecipeHandler} className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
                 <div className="p-5 bg-slate-900 text-white flex justify-between items-center shrink-0">
                     <div>
-                        <h1 className="text-lg font-bold">Create New Recipe</h1>
+                        <h1 className="text-lg font-bold">{selectedRecipe ? 'Edit Recipe' : 'Create New Recipe'}</h1>
                     </div>
                     <button type="button" onClick={onClose} className="text-slate-400 hover:text-white text-xl p-1 font-bold transition-colors">
                         &times;
@@ -174,7 +189,7 @@ const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Difficulty</label>
-                            <select onChange={(e) => setDifficulty(e.target.value)} name="difficulty"
+                            <select onChange={(e) => setDifficulty(e.target.value)} value={difficulty} name="difficulty"
                                     className="mt-1.5 block w-full rounded-lg border-slate-200 py-2.5 px-3 text-sm focus:border-amber-500 focus:ring-amber-500 border bg-white"
                             >
                                 <option value="Easy">Easy</option>
@@ -187,33 +202,28 @@ const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
                             <div className="relative mt-1.5 flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500">
                                 <button type="button" onClick={() => setServing(prev => Math.max(0, Number(prev || 0) - 1))}
                                         className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-r border-slate-100"
-                                >—
-                                </button>
-                                <input type="number" name="prepTime" value={serving}
+                                >—</button>
+                                <input type="number" name="serving" value={serving}
                                        onChange={(e) => setServing(Math.max(0, parseInt(e.target.value) || 0))}
                                        className="block w-full border-0 py-2.5 pl-3 pr-12 text-sm text-center focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                                 <span className="absolute right-12 text-xs font-medium text-slate-400 pointer-events-none">Servings</span>
                                 <button type="button" onClick={() => setServing(prev => Number(prev || 0) + 1)}
                                         className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-l border-slate-100"
-                                >+
-                                </button>
+                                >+</button>
                             </div>
                         </div>
                         <div className="flex-1">
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Preparation Time</label>
                             <div className="relative mt-1.5 flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500">
-                                <button type="button"
-                                        onClick={() => setPrepTime(prev => Math.max(0, Number(prev || 0) - 5))}
+                                <button type="button" onClick={() => setPrepTime(prev => Math.max(0, Number(prev || 0) - 5))}
                                         className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-r border-slate-100"
-                                >—
-                                </button>
+                                >—</button>
                                 <input type="number" name="prepTime" value={prepTime}
                                        onChange={(e) => setPrepTime(Math.max(0, parseInt(e.target.value) || 0))}
                                        className="block w-full border-0 py-2.5 pl-3 pr-12 text-sm text-center focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
-                                <span
-                                    className="absolute right-12 text-xs font-medium text-slate-400 pointer-events-none">mins</span>
+                                <span className="absolute right-12 text-xs font-medium text-slate-400 pointer-events-none">mins</span>
                                 <button type="button" onClick={() => setPrepTime(prev => Number(prev || 0) + 5)}
                                         className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-l border-slate-100"
                                 >+</button>
@@ -229,7 +239,6 @@ const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
                                        onChange={(e) => setCookingTime(Math.max(0, parseInt(e.target.value) || 0))}
                                        className="block w-full border-0 py-2.5 pl-3 pr-12 text-sm text-center focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
-
                                 <span className="absolute right-12 text-xs font-medium text-slate-400 pointer-events-none">mins</span>
                                 <button type="button" onClick={() => setCookingTime(prev => Number(prev || 0) + 5)}
                                         className="px-3 py-2.5 text-slate-500 hover:bg-slate-50 font-bold transition-colors border-l border-slate-100"
@@ -330,18 +339,15 @@ const CreateRecipe = ({ isOpen, onClose, author,  selectedRecipe }) => {
                         Cancel
                     </button>
                     {loading ? (
-                        <button type="button" className="disabled inline-flex items-center text-body bg-neutral-primary-soft border-0 hover:text-heading focus:ring-neutral-tertiary-soft shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5">
-                            <svg aria-hidden="true" className="w-4 h-4 text-blue-800 text-neutral-tertiary animate-spin fill-brand me-2" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <button type="button" disabled className="inline-flex items-center text-slate-500 bg-slate-200 cursor-not-allowed font-medium rounded-lg text-sm px-4 py-2.5">
+                            <svg className="w-4 h-4 text-slate-600 animate-spin mr-2" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-                                <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+                                <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor"/>
                             </svg>
                             {selectedRecipe ? 'Updating...' : 'Uploading...'}
                         </button>
-
-
                     ) : (
-                        <button type="submit"
-                                className="px-6 py-2.5 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 shadow-sm shadow-amber-500/20 transition-all hover:shadow">
+                        <button type="submit" className="px-6 py-2.5 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 shadow-sm shadow-amber-500/20 transition-all hover:shadow">
                             {selectedRecipe ? 'Update Recipe' : 'Upload Recipe'}
                         </button>
                     )}

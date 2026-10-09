@@ -5,7 +5,7 @@ const recipeController = require("../controllers/recipe_controller");
 const interactionController = require("../controllers/interactions_controller");
 
 router.get('/types/all', recipeController.getAll);
-
+router.get('/search', recipeController.searchWithAnything);
 router.get('/types/:type', recipeController.basedOnType);
 router.get('/:id/recipes_list', recipeController.getMyRecipes);
 

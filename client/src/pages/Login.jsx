@@ -12,8 +12,28 @@ const Login = () => {
     const [noti, setNoti] = useState({ show: false, msg: "", type: "" });
     const name = username;
 
+    // Regular Expression
+    const emailRegex = new RegExp("^([\\w.-]+)@(([\\w-]+)\\.)+([\\w-]{2,4})$");
+
     const loginHandler = async (e) => {
         e.preventDefault();
+
+        //Check for empty fields
+        if (!name.trim() || !email.trim() || !password) {
+            setNoti({ show: true, msg: "Please fill in all input fields!", type: "error" });
+            return;
+        }
+
+        //Email Validation
+        if (!emailRegex.test(email)) {
+            setNoti({
+                show: true,
+                msg: "Please enter a valid email address.",
+                type: "error"
+            });
+            return;
+        }
+
         try {
             const response = await fetch('http://localhost:3000/users/login', {
                 method: 'POST',
@@ -33,7 +53,7 @@ const Login = () => {
                 window.dispatchEvent(new Event('local-storage-update'));
                 setNoti({ show: true, msg: "Login Successful!", type: "success" });
                 setTimeout(() => {
-                    navigate('/home');
+                    navigate('/');
                 }, 2000);
             } else {
                 console.log(data.msg);
@@ -50,12 +70,12 @@ const Login = () => {
             {noti.show && (
                 <div className="fixed top-5 right-5 z-50">
                     <Notification message={noti.msg} type={noti.type}
-                        onClose={() => setNoti({ show: false, msg: "", type: "" })}
+                                  onClose={() => setNoti({ show: false, msg: "", type: "" })}
                     />
                 </div>
             )}
             <div className="max-w-5xl w-full mx-auto mb-6 flex justify-start mt-8">
-                <button onClick={() => navigate('/home')}
+                <button onClick={() => navigate('/')}
                         className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-950 bg-white/60 hover:bg-white border border-amber-900/10 rounded-xl transition-all active:scale-95 shadow-sm cursor-pointer"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
@@ -96,7 +116,7 @@ const Login = () => {
                         <p className="text-gray-500 text-sm mt-2">Please enter your details to sign in to your account.</p>
                     </div>
 
-                    <form className='flex flex-col gap-4' onSubmit={(e) => loginHandler(e)}>
+                    <form className='flex flex-col gap-4' onSubmit={loginHandler} noValidate>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Username</label>
                             <input type='text' placeholder='Your username' required
@@ -116,9 +136,9 @@ const Login = () => {
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Password</label>
                             <div className='relative'>
-                                <input className='w-full border border-gray-200 px-4 py-3 rounded-xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-sm bg-gray-50/50'
-                                    type={showPassword ? 'text' : 'password'} placeholder='Enter your password...' required
-                                    onChange={(e) => setPassword(e.target.value)}
+                                <input className='w-full border border-gray-200 px-4 py-3 rounded-xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all text-sm bg-gray-50/50 pr-12'
+                                       type={showPassword ? 'text' : 'password'} placeholder='Enter your password...' required
+                                       onChange={(e) => setPassword(e.target.value)}
                                 />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-amber-700 transition-colors cursor-pointer p-1"

@@ -1,3 +1,4 @@
+const supabase = require('./../config/supabaseClient');
 const recipes = require('./../models/recipe_model');
 const {Msg} = require('./../utils/helperFunc');
 const { ObjectId } = require('mongodb');
@@ -52,19 +53,6 @@ const getAll = async(req, res, next) => {
         next(new Error('Error getting all recipes.'));
     }
 }
-// const basedOnType = async(req, res, next) => {
-//     try {
-//         const type = req.params.type;
-//         const recipes_list = await recipes.find({
-//             category: { $regex: new RegExp(`^${type}$`, 'i') }
-//         });
-//
-//         Msg(res, "Recipes that are matched with your type!", recipes_list);
-//     } catch(err) {
-//         console.log(err);
-//         next(new Error('Error getting basedOnType!'));
-//     }
-// }
 const basedOnType = async (req, res, next) => {
     try {
         const type = req.params.type;
@@ -102,7 +90,7 @@ const getMyRecipes = async(req,res,next) => {
         const { id } = req.params;
         const myRecipes = await recipes.find({"author.id":id});
         if (!myRecipes || myRecipes.length === 0){
-            Msg(res, "You haven't create any recipes yet!", myRecipes);
+            return Msg(res, "You haven't create any recipes yet!", myRecipes);
         }
         Msg(res, 'Your Recipes List!', myRecipes);
     }catch(err){
@@ -110,7 +98,6 @@ const getMyRecipes = async(req,res,next) => {
         next(new Error('Error getting yours Recipes from db.'));
     }
 }
-
 const getRecipeDetails = async (req, res, next) => {
     try {
         const recipeDetail = await recipes.findById(req.params._id);
@@ -149,6 +136,23 @@ const editRecipe = async (req, res, next) => {
 const deleteRecipe = async(req, res, next) =>{
     try{
         const recipeId = req.params.id;
+        const recipe = await recipes.findById(recipeId);
+        if (!recipe) {
+            return next(new Error('Recipe not found!'));
+        }
+        if(recipe.image){
+            const filePath = recipe.image.includes('/store_recipes/')
+                ? recipe.image.split('/store_recipes/')[1]
+                : recipe.image;
+
+            const { error: storageError } = await supabase.storage
+                .from('store_recipes')
+                .remove([filePath]);
+
+            if (storageError) {
+                console.error("Supabase Storage Error:", storageError);
+            }
+        }
         const deletedRecipe = await recipes.deleteOne({_id: recipeId});
         if(!deletedRecipe){
             return next(new Error('Recipe not found!'));
@@ -159,7 +163,53 @@ const deleteRecipe = async(req, res, next) =>{
         next(new Error('Error deleting recipe'));
     }
 }
+const searchWithAnything = async (req, res, next) => {
+    try {
+        const queryTerm = req.query.q || req.query.search || '';
 
+        // Check if query term is provided
+        if (!queryTerm.trim()) {
+            return Msg(res, "Query term is empty, returned empty list.", []);
+        }
+
+        // Create a case-insensitive regex for searching
+        const searchRegex = new RegExp(queryTerm.trim(), 'i');
+
+        // Target both recipe_name and category using $or
+        const matchQuery = {
+            $or: [
+                { recipe_name: { $regex: searchRegex } },
+                { category: { $regex: searchRegex } }
+            ]
+        };
+
+        const searchResults = await recipes.aggregate([
+            { $match: matchQuery },
+            {
+                // Join with comments collection to get comment count
+                $lookup: {
+                    from: 'comments',
+                    localField: '_id',
+                    foreignField: 'recipe_id',
+                    as: 'recipeComments'
+                }
+            },
+            {
+                $addFields: {
+                    commentsCount: { $size: '$recipeComments' }
+                }
+            },
+            {
+                $project: { recipeComments: 0 }
+            }
+        ]);
+
+        Msg(res, "Search results fetched successfully!", searchResults);
+    } catch (err) {
+        console.log('Error searching recipes:', err);
+        next(new Error('Error searching recipes!'));
+    }
+};
 module.exports = {
     getAll,
     createRecipe,
@@ -167,5 +217,5 @@ module.exports = {
     getRecipeDetails,
     getMyRecipes,
     basedOnType,
-    editRecipe,
+    editRecipe,searchWithAnything
 }

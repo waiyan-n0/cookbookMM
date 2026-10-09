@@ -18,15 +18,15 @@ const banners = [
         id: 2,
         title: "Master the Art of Pasta",
         image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=1600&auto=format&fit=crop",
-        link: "/recipes",
+        link: "/search?q=traditional",
         text: "Discover Traditional Food",
     },
     {
         id: 3,
         title: "Desserts made easy",
         image: "https://images.unsplash.com/photo-1586985289906-406988974504?q=80&w=1600&auto=format&fit=crop",
-        link: "/recipes",
-        text: "Discover Deserts",
+        link: "/search?q=drink",
+        text: "Discover Drinks",
     },
 ];
 

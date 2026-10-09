@@ -1,4 +1,4 @@
-import {useState} from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Footer from "../components/Footer";
 import Notification from "../components/Notification";
@@ -10,17 +10,42 @@ const Register = () => {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
-    const [noti, setNoti] = useState({show:false, msg: "",type: ""});
+    const [noti, setNoti] = useState({ show: false, msg: "", type: "" });
     const name = username;
+
+    // Regular Expression
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    const emailRegex = new RegExp("^([\\w.-]+)@(([\\w-]+)\\.)+([\\w-]{2,4})$");
 
     const submitHandler = async (e) => {
         e.preventDefault();
         setError("");
-        if (!name || !email || !password) {
-            setError("Please fill the form input!");
-            setNoti({show:true, msg: "Please fill all the input fields!",type: "error"});
+
+        //empty check
+        if (!name.trim() || !email.trim() || !password) {
+            const msg = "Please fill in all required fields!";
+            setError(msg);
+            setNoti({ show: true, msg, type: "error" });
             return;
         }
+
+        //Username Validation
+        if (!usernameRegex.test(name)) {
+            const msg = "Username must be 3-20 characters long and contain only letters, numbers, or underscores.";
+            setError(msg);
+            setNoti({ show: true, msg, type: "error" });
+            return;
+        }
+
+        //Email Validation
+        if (!emailRegex.test(email)) {
+            const msg = "Please enter a valid email address (e.g., user@example.com).";
+            setError(msg);
+            setNoti({ show: true, msg, type: "error" });
+            return;
+        }
+
+
         try {
             const response = await fetch('http://localhost:3000/users/register', {
                 method: 'POST',
@@ -30,19 +55,22 @@ const Register = () => {
                 body: JSON.stringify({ name, email, password }),
             });
             const data = await response.json();
-            console.log(data);
+
             if (!response.ok) {
-                // alert(data.msg);
-                setNoti({show:true, msg: "Registration Failed! Please Try Again.",type: "error"});
+                const failureMsg = data.msg || "Registration failed!";
+                setError(failureMsg);
+                setNoti({ show: true, msg: failureMsg, type: "error" });
                 return;
             }
-            setNoti({show:true,msg: "Registration Successful! Redirecting to Login Page...",type: "success" });
+
+            setNoti({ show: true, msg: "Registration Successful! Redirecting to Login Page...", type: "success" });
             setTimeout(() => {
                 navigate('/login');
             }, 2000);
         } catch (err) {
-            console.log(err.message);
-            setError("Server error occurred");
+            console.error("Register Error:", err.message);
+            setError("Server error occurred. Please try again later.");
+            setNoti({ show: true, msg: "Server error occurred. Please try again later.", type: "error" });
         }
     };
 
@@ -54,8 +82,8 @@ const Register = () => {
                 </div>
             )}
             <div className="max-w-5xl w-full mx-auto mb-6 flex justify-start">
-                <button onClick={() => navigate('/home')}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-950 bg-white/60 hover:bg-white border border-amber-900/10 rounded-xl transition-all duration-300 active:scale-95 shadow-sm cursor-pointer"
+                <button onClick={() => navigate('/')}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-950 bg-white/60 hover:bg-white border border-amber-900/10 rounded-xl transition-all duration-300 active:scale-95 shadow-sm cursor-pointer"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
@@ -96,18 +124,19 @@ const Register = () => {
                     </div>
 
                     {error && (
-                        <div className="mb-4 p-3 bg-red-550/10 text-red-700 rounded-xl text-sm font-medium border border-red-200 animate-shake">
+                        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm font-medium border border-red-200 animate-shake">
                             {error}
                         </div>
                     )}
 
-                    <form className='flex flex-col gap-4' onSubmit={(e) => submitHandler(e)}>
+                    <form className='flex flex-col gap-4' onSubmit={submitHandler} noValidate>
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Username</label>
-                            <input type='text' placeholder='Your username' required
+                            <input type='text' placeholder='e.g. john doe' required
                                    className='w-full border border-gray-200 px-4 py-3 rounded-xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 bg-gray-50/50 text-sm transition-all duration-300'
                                    onChange={(e) => setUsername(e.target.value)}
                             />
+                            <span className="text-[11px] text-gray-400 mt-1 block">3-20 characters, letters, numbers & underscores only</span>
                         </div>
 
                         <div>
@@ -121,12 +150,12 @@ const Register = () => {
                         <div>
                             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Password</label>
                             <div className="relative">
-                                <input type={showPassword ? 'text' : 'password'} placeholder='At least 8 characters' autoComplete="off" required
-                                    className='w-full border border-gray-200 pl-4 pr-12 py-3 rounded-xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 bg-gray-50/50 text-sm transition-all duration-300'
-                                    onChange={(e) => setPassword(e.target.value)}
+                                <input type={showPassword ? 'text' : 'password'} placeholder='Set your password...' autoComplete="off" required
+                                       className='w-full border border-gray-200 pl-4 pr-12 py-3 rounded-xl outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 bg-gray-50/50 text-sm transition-all duration-300'
+                                       onChange={(e) => setPassword(e.target.value)}
                                 />
                                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-amber-700 transition-colors cursor-pointer p-1"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-amber-700 transition-colors cursor-pointer p-1"
                                 >
                                     {showPassword ? (
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
