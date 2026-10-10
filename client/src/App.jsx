@@ -23,6 +23,8 @@ function App() {
         <Route path='/login' element={<Login/>}/>
         <Route path="/user/profile" element={<Profile/>} />
         <Route path="/recipes" element={<RecipeCard type='all'/>} />
+        <Route path="/recipes/popular" element={<RecipeCard type="popular" />} />
+        <Route path="/recipes/latest" element={<RecipeCard type="latest" />} />
         <Route path="/recipes/:_id" element={<RecipeDetails/>} />
         <Route path="/about" element={<About/>} />
         {/*<Route path="/comment" element={<Comment/>} />*/}

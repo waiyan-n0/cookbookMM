@@ -216,16 +216,11 @@ const getLovedRecipes = async (req, res, next) => {
         if (!userId) {
             return next(new Error('User authentication required!'));
         }
-
-        // Handle both ObjectId and String formats in MongoDB
-        const userObjectId = mongoose.Types.ObjectId.isValid(userId)
-            ? new mongoose.Types.ObjectId(userId)
-            : userId;
+        const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
         const userStringId = userId.toString();
-
         const lovedRecipes = await likes.aggregate([
             {
-                // Match reactor_id (or user_id) as either ObjectId or String
+                // Match reactor_id as either ObjectId or String
                 $match: {
                     $or: [
                         { reactor_id: userObjectId },
@@ -268,7 +263,7 @@ const getLovedRecipes = async (req, res, next) => {
                     cookingTime: '$recipeDetail.cookingTime',
                     image: '$recipeDetail.image',
                     likes: '$recipeDetail.likes',
-                    isLiked: { $literal: true }, // Always true in saved/loved view
+                    isLiked: { $literal: true },
                     commentsCount: { $size: '$recipeComments' },
                     createdAt: '$recipeDetail.createdAt',
                     updatedAt: '$recipeDetail.updatedAt'
@@ -282,7 +277,42 @@ const getLovedRecipes = async (req, res, next) => {
         next(new Error('Error fetching loved recipes!'));
     }
 };
+const getPopularRecipe = async (req, res, next) => {
+    try {
+        // Sort recipes by the length of their 'likes' array in descending order
+        const popularRecipes = await recipes.aggregate([
+            {
+                $addFields: {
+                    likesCount: { $size: { $ifNull: ["$likes", []] } }
+                }
+            },
+            {
+                $sort: { likesCount: -1 }
+            },
+            {
+                $limit: 10
+            }
+        ]);
 
+        Msg(res, "Popular recipes fetched successfully!", popularRecipes);
+    } catch (err) {
+        console.log('Error fetching popular recipes:', err);
+        next(new Error('Error fetching popular recipes!'));
+    }
+};
+
+const getLatestRecipe = async (req, res, next) => {
+    try {
+        const latestRecipes = await recipes.find()
+            .sort({ createAt: -1 })
+            .limit(10);
+
+        Msg(res, "Latest recipes fetched successfully!", latestRecipes);
+    } catch (err) {
+        console.log('Error fetching latest recipes:', err);
+        next(new Error('Error fetching latest recipes!'));
+    }
+};
 module.exports = {
     getAll,
     createRecipe,
@@ -291,5 +321,5 @@ module.exports = {
     getMyRecipes,
     basedOnType,
     editRecipe,searchWithAnything,
-    getLovedRecipes
+    getLovedRecipes, getPopularRecipe, getLatestRecipe,
 }

@@ -36,9 +36,8 @@ const Footer = () => {
                     <div>
                         <h4 className="text-gray-800 font-bold text-sm uppercase tracking-wider mb-4">Categories</h4>
                         <ul className="flex flex-col gap-2.5 text-sm font-medium">
-                            <li><button onClick={() => navigate("/recipes/european_food")} className="hover:text-orange-500 transition-colors">🔥 Popular</button></li>
-                            <li><button onClick={() => navigate("/recipes/all?filter=most-loved")} className="hover:text-orange-500 transition-colors">💖 Most Loved</button></li>
-                            <li><button onClick={() => navigate("/recipes/all?filter=latest")} className="hover:text-orange-500 transition-colors">⏰ Latest Updates</button></li>
+                            <li><button onClick={() => navigate("/recipes/popular")} className="hover:text-orange-500 transition-colors">🔥 Popular</button></li>
+                            <li><button onClick={() => navigate("/recipes/latest")} className="hover:text-orange-500 transition-colors">⏰ Latest Updates</button></li>
                             <li><span className="text-gray-400 cursor-not-allowed">🥗 Healthy Foods</span></li>
                         </ul>
                     </div>

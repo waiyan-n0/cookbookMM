@@ -32,7 +32,7 @@ const login = async(req, res, next) => {
     }
     //password matched or not
     if(!Encoder.compare(password, isUserExist.password)){
-        next(new Error('Wrong Password!'));
+        next(new Error('Wrong Credential (Try Again)!'));
         return;
     }
     //deleting unwanted data for jwt

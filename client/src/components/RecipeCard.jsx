@@ -7,21 +7,31 @@ import Notification from "./Notification.jsx";
 const RecipeCard = ({ type }) => {
     const navigate = useNavigate();
     const [recipes, setRecipes] = useState([]);
-    const [allFetchedRecipes, setAllFetchedRecipes] = useState([]); // Store original full list for local filtering
+    const [allFetchedRecipes, setAllFetchedRecipes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [noti, setNoti] = useState({ show: false, msg: "", type: "" });
 
-    // Filter States
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("all");
 
     const token = localStorage.getItem("token");
     const sliderRef = useRef(null);
+
     const isAllType = type === "all";
+    const isPageView = isAllType || type === "popular" || type === "latest";
 
     useEffect(() => {
         setLoading(true);
-        fetch(`http://localhost:3000/recipes/types/${type}`)
+
+        // Determine correct endpoint based on type prop
+        let endpoint = `http://localhost:3000/recipes/types/${type}`;
+        if (type === "popular") {
+            endpoint = `http://localhost:3000/recipes/popular`;
+        } else if (type === "latest") {
+            endpoint = `http://localhost:3000/recipes/latest`;
+        }
+
+        fetch(endpoint)
             .then((response) => response.json())
             .then(data => {
                 const fetchedRecipes = data.result || [];
@@ -127,13 +137,10 @@ const RecipeCard = ({ type }) => {
         }
     };
 
-    // Combined Search + Category Filter Handler
     const handleFilter = async (query, category) => {
         setSearchQuery(query);
         setSelectedCategory(category);
-
         if (!query.trim()) {
-            // Apply category filter to the original full fetched array
             if (category === "all") {
                 setRecipes(allFetchedRecipes);
             } else {
@@ -144,7 +151,6 @@ const RecipeCard = ({ type }) => {
             }
             return;
         }
-
         try {
             const res = await fetch(`http://localhost:3000/recipes/search?q=${encodeURIComponent(query)}`);
             const data = await res.json();
@@ -165,7 +171,7 @@ const RecipeCard = ({ type }) => {
 
     const goDetail = async (recipe) => {
         if (!token) {
-            setNoti({ show: true, msg: 'You need to login to see the recipe\'s details and instructions! ', type: 'error' });
+            setNoti({ show: true, msg: 'You need to login to see the recipe\'s details and instructions!', type: 'error' });
             return;
         }
         navigate(`/recipes/${recipe._id}`);
@@ -179,9 +185,11 @@ const RecipeCard = ({ type }) => {
         );
     }
 
+    const displayTitle = type === "popular" ? "🔥 Popular Recipes" : type === "latest" ? "✨ Latest Recipes" : type;
+
     return (
         <section className='w-full mx-auto relative'>
-            {isAllType && <NavBar />}
+            {isPageView && <NavBar />}
             {noti.show && (
                 <div className="fixed top-5 right-5 z-50">
                     <Notification message={noti.msg} type={noti.type} onClose={() => setNoti({ show: false, msg: "", type: "" })} />
@@ -189,12 +197,11 @@ const RecipeCard = ({ type }) => {
             )}
 
             <h1 className='px-8 py-2 flex flex-col md:flex-row md:items-center justify-between gap-4'>
-                <span className='font-bold text-2xl capitalize underline'>{type}</span>
+                <span className='font-bold text-2xl capitalize'>{displayTitle}</span>
 
-                {/* Search Bar & Category Dropdown */}
+                {/* Search Bar & Category Bar */}
                 {isAllType && (
                     <div className="flex items-center gap-3">
-                        {/* Category Dropdown */}
                         <select
                             value={selectedCategory}
                             onChange={(e) => handleFilter(searchQuery, e.target.value)}
@@ -207,7 +214,6 @@ const RecipeCard = ({ type }) => {
                             <option value="Drinks">Drinks</option>
                         </select>
 
-                        {/* Search Input */}
                         <div className="relative">
                             <input
                                 className='border border-gray-300 rounded-xl outline-none py-2 pl-9 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-amber-500 shadow-sm w-48 sm:w-64'
@@ -231,9 +237,9 @@ const RecipeCard = ({ type }) => {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                         </svg>
                     </div>
-                    <h3 className="text-lg font-bold text-amber-900 mb-1">No Related Recipes Found!</h3>
+                    <h3 className="text-lg font-bold text-amber-900 mb-1">No Recipes Found!</h3>
                     <p className="text-sm text-amber-700/80 max-w-sm">
-                        We couldn't find any recipes under <span className="font-semibold text-amber-900">"{selectedCategory === 'all' ? type : selectedCategory}"</span> right now. Try adjusting your search query or filter!
+                        We couldn't find any recipes under <span className="font-semibold text-amber-900">"{type}"</span> right now.
                     </p>
                 </div>
             ) : (
@@ -258,12 +264,12 @@ const RecipeCard = ({ type }) => {
                         </>
                     )}
                     <div ref={sliderRef} style={!isAllType ? { scrollbarWidth: 'none', msOverflowStyle: 'none' } : {}}
-                         className={ isAllType ? "flex flex-row flex-wrap gap-6 justify-start" : "flex overflow-x-auto gap-6 scroll-smooth snap-x snap-mandatory no-scrollbar pb-2"}
+                         className={ isAllType || type === "popular" || type === "latest" ? "flex flex-row flex-wrap gap-6 justify-start" : "flex overflow-x-auto gap-6 scroll-smooth snap-x snap-mandatory no-scrollbar pb-2"}
                     >
                         {recipes.map((recipe) => (
                             <div key={recipe._id} onClick={() => goDetail(recipe)}
                                  className={`overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer ${
-                                     isAllType ? "w-full max-w-xs" : "w-full min-w-[260px] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)] shrink-0 snap-start"
+                                     isAllType || type === "popular" || type === "latest" ? "w-full max-w-xs" : "w-full min-w-[260px] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)] shrink-0 snap-start"
                                  }`}
                             >
                                 <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
@@ -311,8 +317,8 @@ const RecipeCard = ({ type }) => {
                                                       d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
                                             </svg>
                                             <span className="text-xs font-medium">
-                                                {Array.isArray(recipe.likes) ? recipe.likes.length : (recipe.likes || 0)}{" "}
-                                                {(Array.isArray(recipe.likes) ? recipe.likes.length : (recipe.likes || 0)) === 1 ? 'like' : 'likes'}
+                                                {Array.isArray(recipe.likes) ? recipe.likes.length : (recipe.likes || recipe.likesCount || 0)}{" "}
+                                                {(Array.isArray(recipe.likes) ? recipe.likes.length : (recipe.likes || recipe.likesCount || 0)) === 1 ? 'like' : 'likes'}
                                             </span>
                                         </button>
 
@@ -336,7 +342,7 @@ const RecipeCard = ({ type }) => {
                     </div>
                 </div>
             )}
-            {isAllType && <Footer/>}
+            {isPageView && <Footer/>}
         </section>
     );
 };

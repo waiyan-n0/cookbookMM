@@ -16,17 +16,17 @@ const banners = [
     },
     {
         id: 2,
-        title: "Master the Art of Pasta",
+        title: "Recipes that are people love",
         image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=1600&auto=format&fit=crop",
-        link: "/search?q=traditional",
-        text: "Discover Traditional Food",
+        link: "/recipes/popular",
+        text: "Discover Popular Food",
     },
     {
         id: 3,
-        title: "Desserts made easy",
+        title: "Latest Recipes",
         image: "https://images.unsplash.com/photo-1586985289906-406988974504?q=80&w=1600&auto=format&fit=crop",
-        link: "/search?q=drink",
-        text: "Discover Drinks",
+        link: "/recipes/latest",
+        text: "Discover Latest",
     },
 ];
 
