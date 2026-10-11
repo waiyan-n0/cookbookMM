@@ -5,9 +5,9 @@ const app = express();
 const cors = require('cors');
 
 const PORT = process.env.PORT || 3000;
-mongoose.connect(process.env.MONGODB_URL)
-    .then(()=> console.log('MongoDB is connected!'))
-    .catch((err)=>console.log('Database Error: ',err));
+// mongoose.connect(process.env.MONGODB_URL)
+//     .then(()=> console.log('MongoDB is connected!'))
+//     .catch((err)=>console.log('Database Error: ',err));
 
 app.use(cors());
 app.use(express.json());
@@ -16,6 +16,8 @@ app.use(express.urlencoded({ extended: true }));
 const userRoute = require('./routes/user_route.js');
 const recipeRoute = require('./routes/recipe_route.js');
 const interactionRoute = require('./routes/interaction_route.js');
+const {connectToMongoDB} = require("./config/db");
+connectToMongoDB();
 
 app.use('/users', userRoute);
 app.use('/recipes', recipeRoute);
