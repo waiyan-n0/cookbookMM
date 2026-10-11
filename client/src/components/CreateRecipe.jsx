@@ -21,10 +21,8 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
     const [imageFile, setImageFile] = useState(null);
     const [noti, setNoti] = useState({ show: false, msg: "", type: "" });
     const [loading, setLoading] = useState(false);
-
+    const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
     if (!isOpen) return null;
-
-    // Updated: Default unit to empty string for custom input
     const addIngredient = () => setIngredients([...ingredients, { name: "", amount: "1", unit: "" }]);
     const removeIngredient = (index) => setIngredients(ingredients.filter((_, i) => i !== index));
     const addInstruction = () => setInstructions([...instructions, ""]);
@@ -106,7 +104,7 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
             };
 
             const isUpdate = !!selectedRecipe;
-            const apiUrl = isUpdate ? `http://localhost:3000/recipes/${selectedRecipe._id}` : 'http://localhost:3000/recipes';
+            const apiUrl = isUpdate ? `${API_URL}/recipes/${selectedRecipe._id}` : `${API_URL}/recipes`;
             const apiMethod = isUpdate ? 'PUT' : 'POST';
 
             const response = await fetch(apiUrl, {

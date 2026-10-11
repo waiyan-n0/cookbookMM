@@ -8,8 +8,9 @@ import Comment from "../pages/Comment";
 const RecipeDetails = () => {
     const [detail, setDetail] = useState(null);
     const { _id } = useParams();
+    const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
     useEffect(() => {
-        fetch(`http://localhost:3000/recipes/${_id}`)
+        fetch(`${API_URL}/recipes/${_id}`)
             .then(res => res.json())
             .then(data => setDetail(data.result))
             .catch(err => console.error('Error fetching data: ', err));

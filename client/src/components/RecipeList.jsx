@@ -9,10 +9,10 @@ const RecipeList = ({ type, id }) => {
     const [selectedRecipe, setSelectedRecipe] = useState(null);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [noti, setNoti] = useState({show: false, msg:'', type:''});
-
+    const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
     useEffect(() => {
         if (!id) return;
-        fetch(`http://localhost:3000/recipes/${id}/recipes_list`)
+        fetch(`${API_URL}/recipes/${id}/recipes_list`)
             .then((response) => {
                 if (!response.ok) throw new Error("Failed to fetch recipes");
                 return response.json();

@@ -21,13 +21,12 @@ const Profile = () => {
     const [editName, setEditName] = useState("");
     const [isUpdating, setIsUpdating] = useState(false);
 
-    // Loved Recipes State
     const [lovedRecipes, setLovedRecipes] = useState([]);
     const [loadingLoved, setLoadingLoved] = useState(false);
-
     const [noti, setNoti] = useState({ show: false, msg: '', type: '' });
     const fileInputRef = useRef(null);
     const token = localStorage.getItem('token');
+    const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
@@ -55,7 +54,7 @@ const Profile = () => {
 
             const { data: { publicUrl } } = supabase.storage.from('users_pf').getPublicUrl(filePath);
 
-            const response = await fetch('http://localhost:3000/users/profile', {
+            const response = await fetch(`${API_URL}/users/profile`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -88,7 +87,7 @@ const Profile = () => {
     };
     // console.log(imgUrl)
     const getUser = async () => {
-        fetch("http://localhost:3000/users/me", {
+        fetch(`${API_URL}/users/me`, {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -116,7 +115,7 @@ const Profile = () => {
     const getLovedRecipes = async () => {
         setLoadingLoved(true);
         try {
-            const response = await fetch("http://localhost:3000/recipes/user/likes", {
+            const response = await fetch(`${API_URL}/recipes/user/likes`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -144,7 +143,7 @@ const Profile = () => {
         setLovedRecipes(prev => prev.filter(r => r._id !== recipeId));
 
         try {
-            const response = await fetch("http://localhost:3000/interactions/like", {
+            const response = await fetch(`${API_URL}/interactions/like`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -173,7 +172,7 @@ const Profile = () => {
 
         setIsUpdating(true);
         try {
-            const response = await fetch("http://localhost:3000/users/profile", {
+            const response = await fetch(`${API_URL}/users/profile`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

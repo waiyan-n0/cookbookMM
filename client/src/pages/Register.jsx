@@ -16,38 +16,31 @@ const Register = () => {
     // Regular Expression
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
     const emailRegex = new RegExp("^([\\w.-]+)@(([\\w-]+)\\.)+([\\w-]{2,4})$");
+    const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
     const submitHandler = async (e) => {
         e.preventDefault();
         setError("");
-
-        //empty check
         if (!name.trim() || !email.trim() || !password) {
             const msg = "Please fill in all required fields!";
             setError(msg);
             setNoti({ show: true, msg, type: "error" });
             return;
         }
-
-        //Username Validation
         if (!usernameRegex.test(name)) {
             const msg = "Username must be 3-20 characters long and contain only letters, numbers, or underscores.";
             setError(msg);
             setNoti({ show: true, msg, type: "error" });
             return;
         }
-
-        //Email Validation
         if (!emailRegex.test(email)) {
             const msg = "Please enter a valid email address (e.g., user@example.com).";
             setError(msg);
             setNoti({ show: true, msg, type: "error" });
             return;
         }
-
-
         try {
-            const response = await fetch('http://localhost:3000/users/register', {
+            const response = await fetch(`${API_URL}/users/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

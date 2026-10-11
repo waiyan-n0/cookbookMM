@@ -4,7 +4,6 @@ const Notification = ({ message, type = "success", onClose, duration = 3000 }) =
 
     useEffect(() => {
         if (!onClose) return;
-
         const timer = setTimeout(() => {
             onClose();
         }, duration);

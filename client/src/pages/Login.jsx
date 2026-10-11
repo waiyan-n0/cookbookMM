@@ -11,31 +11,24 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [noti, setNoti] = useState({ show: false, msg: "", type: "" });
     const name = username;
-
+    const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
     // Regular Expression
     const emailRegex = new RegExp("^([\\w.-]+)@(([\\w-]+)\\.)+([\\w-]{2,4})$");
 
     const loginHandler = async (e) => {
         e.preventDefault();
-
-        //Check for empty fields
         if (!name.trim() || !email.trim() || !password) {
             setNoti({ show: true, msg: "Please fill in all input fields!", type: "error" });
             return;
         }
-
         //Email Validation
         if (!emailRegex.test(email)) {
-            setNoti({
-                show: true,
-                msg: "Please enter a valid email address.",
-                type: "error"
-            });
+            setNoti({show: true, msg: "Please enter a valid email address.", type: "error"});
             return;
         }
 
         try {
-            const response = await fetch('http://localhost:3000/users/login', {
+            const response = await fetch(`${API_URL}/users/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

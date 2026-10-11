@@ -8,7 +8,7 @@ const NavBar = ({ clickPf, imgUrl }) => {
     const location = useLocation();
     const [userPf, setUserPf] = useState("");
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-
+    const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -29,7 +29,7 @@ const NavBar = ({ clickPf, imgUrl }) => {
                 if(imgUrl){
                     setUserPf(imgUrl);
                 }
-                fetch("http://localhost:3000/users/me", {
+                fetch(`${API_URL}/users/me`, {
                     headers: {Authorization: `Bearer ${token}`}
                 }).then(res=>res.json()).then(data => {
                     setUserPf(data.result.image);

@@ -8,7 +8,7 @@ const Comment = ({ recipeId }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [noti, setNoti] = useState({show:false, msg:"",type:""});
     const [currentUserId, setCurrentUserId] = useState(null);
-
+    const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
     const token = localStorage.getItem("token");
     useEffect(() => {
         if (token) {
@@ -29,7 +29,7 @@ const Comment = ({ recipeId }) => {
 
         let isMounted = true;
 
-        fetch(`http://localhost:3000/interactions/${recipeId}/comments`)
+        fetch(`${API_URL}/interactions/${recipeId}/comments`)
             .then((res) => res.json())
             .then((data) => {
                 if (isMounted && data.con) {

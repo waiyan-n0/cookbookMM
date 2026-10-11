@@ -19,16 +19,16 @@ const RecipeCard = ({ type }) => {
 
     const isAllType = type === "all";
     const isPageView = isAllType || type === "popular" || type === "latest";
-
+    const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
     useEffect(() => {
         setLoading(true);
 
         // Determine correct endpoint based on type prop
-        let endpoint = `http://localhost:3000/recipes/types/${type}`;
+        let endpoint = `${API_URL}/recipes/types/${type}`;
         if (type === "popular") {
-            endpoint = `http://localhost:3000/recipes/popular`;
+            endpoint = `${API_URL}/recipes/popular`;
         } else if (type === "latest") {
-            endpoint = `http://localhost:3000/recipes/latest`;
+            endpoint = `${API_URL}/recipes/latest`;
         }
 
         fetch(endpoint)
@@ -41,7 +41,7 @@ const RecipeCard = ({ type }) => {
 
                 if (token && fetchedRecipes.length > 0) {
                     fetchedRecipes.forEach(recipe => {
-                        fetch(`http://localhost:3000/interactions/${recipe._id}/like-status`, {
+                        fetch(`${API_URL}/interactions/${recipe._id}/like-status`, {
                             headers: { "Authorization": `Bearer ${token}` }
                         })
                             .then(res => res.json())
