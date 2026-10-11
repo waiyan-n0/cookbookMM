@@ -19,14 +19,14 @@ const banners = [
         title: "Recipes that are people love",
         image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=1600&auto=format&fit=crop",
         link: "/recipes/popular",
-        text: "Discover Popular Food",
+        text: "What is Popular Right Now !",
     },
     {
         id: 3,
         title: "Latest Recipes",
         image: "https://images.unsplash.com/photo-1586985289906-406988974504?q=80&w=1600&auto=format&fit=crop",
         link: "/recipes/latest",
-        text: "Discover Latest",
+        text: "Try Latest Recipes !",
     },
 ];
 

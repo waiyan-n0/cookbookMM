@@ -6,12 +6,14 @@ import { jwtDecode } from 'jwt-decode';
 const NavBar = ({ clickPf, imgUrl }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const [userPf, setUserPf] = useState("");
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) {
             setIsAuthenticated(false);
+            setUserPf("");
             return;
         }
         try {
@@ -21,8 +23,18 @@ const NavBar = ({ clickPf, imgUrl }) => {
                 console.log("The token is expired");
                 localStorage.removeItem('token');
                 setIsAuthenticated(false);
+                setUserPf("");
             } else {
                 setIsAuthenticated(true);
+                if(imgUrl){
+                    setUserPf(imgUrl);
+                }
+                fetch("http://localhost:3000/users/me", {
+                    headers: {Authorization: `Bearer ${token}`}
+                }).then(res=>res.json()).then(data => {
+                    setUserPf(data.result.image);
+                    //console.log(data);
+                });
             }
         } catch (err) {
             console.log(err.message);
@@ -41,7 +53,6 @@ const NavBar = ({ clickPf, imgUrl }) => {
             navigate('/user/profile');
         }
     };
-
     return (
         <section className="sticky top-0 z-40 flex items-center justify-between bg-[#FDF3D7]/90 backdrop-blur-md border-b border-[#f5e3b5] py-4 px-6 md:px-12 transition-all duration-300">
 
@@ -50,7 +61,7 @@ const NavBar = ({ clickPf, imgUrl }) => {
                 Chef mal
             </div>
 
-            <nav className="">
+            <nav>
                 <ul className="navItems flex items-center space-x-8 text-xs lg:text-lg md:text-lg font-thin text-amber-900/80">
                     <li onClick={() => navigate('/')}
                         className="cursor-pointer hover:text-amber-950 transition-colors relative after:absolute after:bottom-[-6px] after:left-0 after:w-0 after:h-[2px] after:bg-amber-700 hover:after:w-full after:transition-all">Home</li>
@@ -66,7 +77,7 @@ const NavBar = ({ clickPf, imgUrl }) => {
                     <div onClick={handleProfileClick}
                          className="w-10 h-10 border-2 border-amber-600/30 rounded-full overflow-hidden cursor-pointer shadow-sm hover:border-amber-700 hover:shadow-md transition-all duration-200 active:scale-95"
                     >
-                        <img src={imgUrl ? imgUrl : defaultPfImage} alt="Profile"
+                        <img src={userPf || defaultPfImage} alt="Profile"
                              className="w-full h-full object-cover"
                         />
                     </div>

@@ -86,7 +86,7 @@ const Profile = () => {
             setNoti({ show: true, msg: "Something went wrong updating profile.", type: "error" });
         }
     };
-
+    // console.log(imgUrl)
     const getUser = async () => {
         fetch("http://localhost:3000/users/me", {
             method: 'GET',

@@ -4,7 +4,6 @@ const {Msg} = require('./../utils/helperFunc');
 const { ObjectId } = require('mongodb');
 const mongoose = require("mongoose");
 const likes = require("../models/like_model");
-const comments = require("../models/comment_model");
 
 const createRecipe = async (req, res, next) =>{
     const {
@@ -41,18 +40,28 @@ const createRecipe = async (req, res, next) =>{
         next(new Error('Error creating recipe'));
     }
 }
-const getAll = async(req, res, next) => {
+const getAll = async (req, res, next) => {
     try {
-        const currentUser = req.userId ? new mongoose.Types.ObjectId(req.userId) : null;
-        const allRecipes = await recipes.find();
-
+        const allRecipes = await recipes.aggregate([
+            {
+                $lookup: {
+                    from: 'comments',
+                    localField: '_id',
+                    foreignField: 'recipe_id',
+                    as: 'recipeComments'
+                }
+            },
+            {
+                $addFields: {commentsCount: { $size: '$recipeComments' }}
+            },
+            {$project: { recipeComments: 0 }}
+        ]);
         Msg(res, 'All Recipes', allRecipes);
-
-    } catch(err) {
+    } catch (err) {
         console.log(err);
         next(new Error('Error getting all recipes.'));
     }
-}
+};
 const basedOnType = async (req, res, next) => {
     try {
         const type = req.params.type;
@@ -88,9 +97,20 @@ const basedOnType = async (req, res, next) => {
 const getMyRecipes = async(req,res,next) => {
     try{
         const { id } = req.params;
-        const myRecipes = await recipes.find({"author.id":id});
-        if (!myRecipes || myRecipes.length === 0){
-            return Msg(res, "You haven't create any recipes yet!", myRecipes);
+        const myRecipes = await recipes.aggregate([
+            {$match: {"author.id": id}},
+            {
+                $lookup: {from: 'comments',
+                localField: '_id', foreignField: 'recipe_id',
+                as: 'recipeComments'}
+            },
+            {
+                $addFields: {commentsCount: {$size: '$recipeComments'}}
+            },
+            {$project: {recipeComments: 0}}
+        ]);
+        if(!myRecipes || myRecipes.length===0){
+            return Msg(res, "You haven't created any recipes yet!",[]);
         }
         Msg(res, 'Your Recipes List!', myRecipes);
     }catch(err){
@@ -286,12 +306,18 @@ const getPopularRecipe = async (req, res, next) => {
                     likesCount: { $size: { $ifNull: ["$likes", []] } }
                 }
             },
+            { $sort: { likesCount: -1 } },
+            { $limit: 10 },
             {
-                $sort: { likesCount: -1 }
+                $lookup: {
+                    from: 'comments',
+                    localField: '_id',
+                    foreignField: 'recipe_id',
+                    as: 'recipeComments'
+                }
             },
-            {
-                $limit: 10
-            }
+            {$addFields: {commentsCount: { $size: '$recipeComments' }}},
+            {$project: { recipeComments: 0 }}
         ]);
 
         Msg(res, "Popular recipes fetched successfully!", popularRecipes);
@@ -300,19 +326,27 @@ const getPopularRecipe = async (req, res, next) => {
         next(new Error('Error fetching popular recipes!'));
     }
 };
-
 const getLatestRecipe = async (req, res, next) => {
     try {
-        const latestRecipes = await recipes.find()
-            .sort({ createAt: -1 })
-            .limit(10);
-
+        const latestRecipes = await recipes.aggregate([
+            { $sort: { createAt: -1 } },
+            { $limit: 10 },
+            {$lookup: {
+                    from: 'comments',
+                    localField: '_id',
+                    foreignField: 'recipe_id',
+                    as: 'recipeComments'
+                }},
+            {$addFields: {commentsCount: { $size: '$recipeComments' }}},
+            {$project: { recipeComments: 0 }}
+        ]);
         Msg(res, "Latest recipes fetched successfully!", latestRecipes);
     } catch (err) {
         console.log('Error fetching latest recipes:', err);
         next(new Error('Error fetching latest recipes!'));
     }
 };
+
 module.exports = {
     getAll,
     createRecipe,

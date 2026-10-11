@@ -27,17 +27,17 @@ const Footer = () => {
                     <div>
                         <h4 className="text-gray-800 font-bold text-sm uppercase tracking-wider mb-4">Quick Links</h4>
                         <ul className="flex flex-col gap-2.5 text-sm font-medium">
-                            <li><button onClick={() => navigate("/")} className="hover:text-orange-500 transition-colors">Home</button></li>
-                            <li><button onClick={() => navigate("/recipes")} className="hover:text-orange-500 transition-colors">All Recipes</button></li>
-                            <li><button onClick={() => navigate("/about")} className="hover:text-orange-500 transition-colors">About Us</button></li>
+                            <li><button onClick={() => navigate("/")} className="hover:text-orange-500 transition-colors cursor-pointer">Home</button></li>
+                            <li><button onClick={() => navigate("/recipes")} className="hover:text-orange-500 transition-colors cursor-pointer">All Recipes</button></li>
+                            <li><button onClick={() => navigate("/about")} className="hover:text-orange-500 transition-colors cursor-pointer">About Us</button></li>
                         </ul>
                     </div>
 
                     <div>
                         <h4 className="text-gray-800 font-bold text-sm uppercase tracking-wider mb-4">Categories</h4>
                         <ul className="flex flex-col gap-2.5 text-sm font-medium">
-                            <li><button onClick={() => navigate("/recipes/popular")} className="hover:text-orange-500 transition-colors">🔥 Popular</button></li>
-                            <li><button onClick={() => navigate("/recipes/latest")} className="hover:text-orange-500 transition-colors">⏰ Latest Updates</button></li>
+                            <li><button onClick={() => navigate("/recipes/popular")} className="hover:text-orange-500 transition-colors cursor-pointer">🔥 Popular</button></li>
+                            <li><button onClick={() => navigate("/recipes/latest")} className="hover:text-orange-500 transition-colors cursor-pointer">⏰ Latest Updates</button></li>
                             <li><span className="text-gray-400 cursor-not-allowed">🥗 Healthy Foods</span></li>
                         </ul>
                     </div>

@@ -49,7 +49,6 @@ const checkLikeStatus = async (req, res, next) => {
         next(new Error('Error checking like status.'));
     }
 }
-
 const postComment = async (req, res, next) => {
     try {
         const { recipe_id, text } = req.body;
@@ -62,7 +61,6 @@ const postComment = async (req, res, next) => {
         const newComment = new comments({recipe_id, user_id, text});
         await newComment.save();
 
-        // UI မှာ ချက်ချင်း User ရဲ့ နာမည်ပြနိုင်အောင် user_id ထဲက name ကိုပါဆွဲထုတ် (populate) ပေးလိုက်မယ်
         const populatedComment = await comments.findById(newComment._id).populate('user_id', 'name');
 
         return res.status(201).json({
@@ -116,6 +114,9 @@ const deleteComment =async(req, res, next) =>{
         console.log('Error deleting comment: ',err);
         next(new Error('Error deleting comment!'));
     }
+}
+const getAllComment =async(req, res, next) =>{
+
 }
 module.exports = {
     like, checkLikeStatus, postComment,

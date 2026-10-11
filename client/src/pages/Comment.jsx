@@ -42,7 +42,7 @@ const Comment = ({ recipeId }) => {
             isMounted = false;
         };
     }, [recipeId]);
-    //console.log('comment: ',comments)
+    // console.log('comment: ',comments)
     const handlePostComment = async (e) => {
         e.preventDefault();
         if (!newComment.trim()) return;

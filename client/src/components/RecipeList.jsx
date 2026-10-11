@@ -34,7 +34,6 @@ const RecipeList = ({ type, id }) => {
             setIsUpdateModalOpen(true);
         }
     };
-
     const deleteRecipe = async (e, id) => {
         e.stopPropagation();
         if (!window.confirm("Are you sure you want to delete this recipe?")) return;
@@ -62,7 +61,7 @@ const RecipeList = ({ type, id }) => {
             setNoti({show:true, msg: `Error Deleting Recipe!`, type: "error"});
         }
     }
-
+    // console.log(recipesList)
     return (
         <section className='flex flex-col w-full'>
             {noti.show && (
@@ -136,10 +135,14 @@ const RecipeList = ({ type, id }) => {
 
                                     <button onClick={(e) => e.stopPropagation()}
                                             className="flex items-center gap-1.5 hover:text-blue-500 transition-colors py-1 px-2 rounded-md hover:bg-gray-50">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48L4.32 19.8c-.11.353.17.65.514.543l2.582-.805c1.333.456 2.793.712 4.284.712Z"/>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                             strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
+                                            <path strokeLinecap="round" strokeLinejoin="round"
+                                                  d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48L4.32 19.8c-.11.353.17.65.514.543l2.582-.805c1.333.456 2.793.712 4.284.712Z"/>
                                         </svg>
-                                        <span className="text-xs font-medium">Comment</span>
+                                        <span className="text-xs font-medium">
+                                            {recipe.commentsCount || 0} {(recipe.commentsCount || 0) === 1 ? 'comment' : 'comments'}
+                                        </span>
                                     </button>
                                 </div>
                             </div>

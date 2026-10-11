@@ -72,7 +72,7 @@ const About = () => {
                         Explore our curated collection of trending recipes and find your next favorite meal today.
                     </p>
                     <button
-                        onClick={() => navigate("/recipes/all")}
+                        onClick={() => navigate("/recipes")}
                         className="bg-white text-orange-600 font-bold text-sm px-6 py-3 rounded-xl transition-all hover:bg-orange-50 active:scale-95 shadow-md"
                     >
                         Browse All Recipes

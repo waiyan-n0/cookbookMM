@@ -75,7 +75,6 @@ const RecipeCard = ({ type }) => {
             });
         }
     };
-
     const like = async (e, recipeId, isLiked) => {
         e.stopPropagation();
         if (!token) {
@@ -136,7 +135,6 @@ const RecipeCard = ({ type }) => {
             setAllFetchedRecipes(revertLikeState);
         }
     };
-
     const handleFilter = async (query, category) => {
         setSearchQuery(query);
         setSelectedCategory(category);
@@ -168,7 +166,6 @@ const RecipeCard = ({ type }) => {
             console.error("Search error:", err);
         }
     };
-
     const goDetail = async (recipe) => {
         if (!token) {
             setNoti({ show: true, msg: 'You need to login to see the recipe\'s details and instructions!', type: 'error' });
@@ -186,7 +183,7 @@ const RecipeCard = ({ type }) => {
     }
 
     const displayTitle = type === "popular" ? "🔥 Popular Recipes" : type === "latest" ? "✨ Latest Recipes" : type;
-
+    // console.log(recipes)
     return (
         <section className='w-full mx-auto relative'>
             {isPageView && <NavBar />}
