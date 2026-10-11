@@ -1,11 +1,16 @@
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const redis = require('async-redis').createClient();
+const redisClient = require('async-redis').createClient(process.env.REDIS_URL);
+
+//unhandled error crashes
+redisClient.on('error', (err) => {
+    console.error('Redis Client Error: ', err.message);
+});
 
 const RDB = {
-    set: async (key, value) => await redis.set(key, JSON.stringify(value).toString()),
-    get: async (key) => JSON.parse(await redis.get(key)),
-    del: async (key) => await redis.del(key),
+    set: async (key, value) => await redisClient.set(key, JSON.stringify(value).toString()),
+    get: async (key) => JSON.parse(await redisClient.get(key)),
+    del: async (key) => await redisClient.del(key),
 }
 
 const Msg = (res, msg='',result={}) => {
