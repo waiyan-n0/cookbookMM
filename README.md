@@ -65,8 +65,8 @@ cookbookMM/
 └── README.md               # Project documentation
 ```
 ## 🚀 Deployment
--**Backend API:** Hosted on Render
--**Frontend Client:** Hosted on Vercel
+- **Backend API:** Hosted on Render
+- **Frontend Client:** Hosted on Vercel
 ## Author
--*Wai Yan Naing - Computer Science Student who is looking for internship opportunity!*
--**📬 Telegram:** @waiyandev
+- *Wai Yan Naing - Computer Science Student who is looking for internship opportunity!*
+- **📬 Telegram:** @waiyandev
