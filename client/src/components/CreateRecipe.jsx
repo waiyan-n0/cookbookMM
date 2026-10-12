@@ -156,7 +156,7 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Recipe Name</label>
                             <input type="text" onChange={(e) => setRecipeName(e.target.value)} value={recipeName} required placeholder='E.g. Chicken Curry'
-                                   className="mt-1.5 block w-full rounded-lg border-slate-200 py-2.5 px-3 text-sm focus:border-amber-500 focus:ring-amber-500 border"
+                                   className="mt-1.5 block w-full rounded-lg border-slate-200 py-2.5 px-3 text-sm focus:border-amber-500 focus:ring-amber-500 border outline-0"
                             />
                         </div>
 
@@ -164,7 +164,7 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Category</label>
                             <select name={category === "Other" ? "ignore_category" : "category"} required
                                     value={category} onChange={(e) => setCategory(e.target.value)}
-                                    className="mt-1.5 block w-full rounded-lg border-slate-200 py-2.5 px-3 text-sm focus:border-amber-500 focus:ring-amber-500 border bg-white"
+                                    className="mt-1.5 block w-full rounded-lg border-slate-200 py-2.5 px-3 text-sm focus:border-amber-500 focus:ring-amber-500 border bg-white outline-0"
                             >
                                 <option value="" disabled>Choose Category</option>
                                 <option value="Soup">Soup</option>
@@ -187,7 +187,9 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Difficulty</label>
-                            <select onChange={(e) => setDifficulty(e.target.value)} value={difficulty} name="difficulty"
+                            <select onChange={(e) => setDifficulty(e.target.value)} value={difficulty}
+
+                                    name="difficulty"
                                     className="mt-1.5 block w-full rounded-lg border-slate-200 py-2.5 px-3 text-sm focus:border-amber-500 focus:ring-amber-500 border bg-white"
                             >
                                 <option value="Easy">Easy</option>
@@ -271,7 +273,7 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                 <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase">
-                                    <th className="p-3 w-5/12">Ingredient Name</th>
+                                    <th className="p-3 w-4/12">Ingredient Name</th>
                                     <th className="p-3 w-2/12">Amount</th>
                                     <th className="p-3 w-2/12">Unit</th>
                                     <th className="p-3 w-1/12 text-center"></th>
@@ -281,7 +283,7 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                                 {ingredients.map((ing, index) => (
                                     <tr key={index} className="hover:bg-slate-50/50">
                                         <td className="p-2">
-                                            <input type="text" value={ing.name} onChange={(e) => { const updated = [...ingredients]; updated[index].name = e.target.value; setIngredients(updated); }} placeholder="e.g. Chicken" className="w-full bg-transparent border-0 focus:ring-0 p-1 font-medium text-slate-700 placeholder-slate-300" />
+                                            <input type="text" value={ing.name} onChange={(e) => { const updated = [...ingredients]; updated[index].name = e.target.value; setIngredients(updated); }} placeholder="e.g. Chicken" className="w-full bg-transparent border-0 p-1 font-medium text-slate-700 placeholder-slate-300 outline-0" />
                                         </td>
                                         <td className="p-2">
                                             <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500">
@@ -305,10 +307,10 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                                             </div>
                                         </td>
                                         <td className="p-2">
-                                            <input type="text" value={ing.unit} onChange={(e) => { const updated = [...ingredients]; updated[index].unit = e.target.value; setIngredients(updated); }} placeholder="e.g.cups, grams" className="w-full bg-transparent border-0 focus:ring-0 p-1 font-medium text-slate-700 placeholder-slate-300" />
+                                            <input type="text" value={ing.unit} onChange={(e) => { const updated = [...ingredients]; updated[index].unit = e.target.value; setIngredients(updated); }} placeholder="e.g.cups, grams" className="w-full bg-transparent border-0 focus:ring-0 p-1 font-medium text-slate-700 placeholder-slate-300 outline-0" />
                                         </td>
                                         <td className="p-2 text-center">
-                                            <button type="button" onClick={() => removeIngredient(index)} className="text-slate-300 hover:text-red-500 transition-colors p-1">&times;</button>
+                                            <button type="button" onClick={() => removeIngredient(index)} className="text-slate-800 hover:text-red-800 font-bold transition-colors p-1">&times;</button>
                                         </td>
                                     </tr>
                                 ))}
@@ -331,7 +333,7 @@ const CreateRecipe = ({ isOpen, onClose, author, selectedRecipe }) => {
                                 <div key={index} className="flex gap-4 items-start group">
                                     <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center mt-2 shadow-sm">{index + 1}</span>
                                     <div className="flex-grow relative">
-                                        <textarea rows={2} value={step} onChange={(e) => { const updated = [...instructions]; updated[index] = e.target.value; setInstructions(updated); }} placeholder="Describe this cooking step..." className="block w-full rounded-lg border-slate-200 py-2 px-3 text-sm focus:border-amber-500 focus:ring-amber-500 border" />
+                                        <textarea rows={2} value={step} onChange={(e) => { const updated = [...instructions]; updated[index] = e.target.value; setInstructions(updated); }} placeholder="Describe this cooking step..." className="block w-full rounded-lg border-slate-200 py-2 px-3 text-sm focus:border-amber-500 focus:ring-amber-500 border outline-0" />
                                     </div>
                                     <button type="button" onClick={() => removeInstruction(index)} className="mt-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 text-lg leading-none">&times;</button>
                                 </div>

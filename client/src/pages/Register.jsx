@@ -14,7 +14,7 @@ const Register = () => {
     const name = username;
 
     // Regular Expression
-    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    const usernameRegex = /^[a-zA-Z0-9\s]{3,20}$/;
     const emailRegex = new RegExp("^([\\w.-]+)@(([\\w-]+)\\.)+([\\w-]{2,4})$");
     const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 

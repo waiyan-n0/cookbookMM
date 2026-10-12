@@ -265,11 +265,11 @@ const RecipeCard = ({ type }) => {
                     >
                         {recipes.map((recipe) => (
                             <div key={recipe._id} onClick={() => goDetail(recipe)}
-                                 className={`overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer ${
+                                 className={`overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
                                      isAllType || type === "popular" || type === "latest" ? "w-full max-w-xs" : "w-full min-w-[260px] sm:w-[calc((100%-1.5rem)/2)] lg:w-[calc((100%-4.5rem)/4)] shrink-0 snap-start"
                                  }`}
                             >
-                                <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
+                                <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 cursor-pointer">
                                     <img src={recipe.image} alt={recipe.recipe_name}
                                          className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                                          onError={(e) => {
@@ -304,7 +304,7 @@ const RecipeCard = ({ type }) => {
 
                                     <div className="flex items-center justify-around text-sm text-gray-600 pt-1">
                                         <button onClick={(e) => like(e, recipe._id, recipe.isLiked)}
-                                                className={`flex items-center gap-1.5 transition-colors py-1 px-2 rounded-md hover:bg-gray-50 ${
+                                                className={`flex items-center gap-1.5 transition-colors py-1 px-2 rounded-md hover:bg-gray-50 cursor-pointer ${
                                                     recipe.isLiked ? 'text-red-500 font-semibold' : 'text-gray-600 hover:text-red-500'
                                                 }`}>
                                             <svg xmlns="http://www.w3.org/2000/svg"
@@ -322,7 +322,7 @@ const RecipeCard = ({ type }) => {
                                         <span className="text-gray-300" aria-hidden="true">|</span>
 
                                         <button
-                                            className="flex items-center gap-1.5 hover:text-blue-500 transition-colors py-1 px-2 rounded-md hover:bg-gray-50">
+                                            className="flex items-center gap-1.5 hover:text-blue-500 transition-colors py-1 px-2 rounded-md hover:bg-gray-50 cursor-pointer">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                                  strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
                                                 <path strokeLinecap="round" strokeLinejoin="round"
