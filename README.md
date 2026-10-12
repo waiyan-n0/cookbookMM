@@ -7,7 +7,7 @@
 > A full-stack MERN community platform built for beginners learning to cook and passionate foodies sharing global recipes freely.
 
 🌐 **Live Demo:** [View CookbookMM Live](https://cookbook-mm.vercel.app/)
-
+- **Note:** You need VPN because of the Supabase & Cloud Storage problem. If you do not connect the VPN, the image will not be displayed! 
 ---
 
 ## 📖 Project Overview
