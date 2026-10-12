@@ -6,7 +6,7 @@
 
 > A full-stack MERN community platform built for beginners learning to cook and passionate foodies sharing global recipes freely.
 
-🌐 **Live Demo:** [View CookbookMM Live]([https://your-frontend-url.vercel.app](https://cookbook-mm.vercel.app/))
+🌐 **Live Demo:** [View CookbookMM Live]([https://cookbook-mm.vercel.app/])
 
 ---
 
