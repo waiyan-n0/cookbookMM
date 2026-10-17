@@ -150,7 +150,7 @@ const RecipeCard = ({ type }) => {
             return;
         }
         try {
-            const res = await fetch(`http://localhost:3000/recipes/search?q=${encodeURIComponent(query)}`);
+            const res = await fetch(`${API_URL}/recipes/search?q=${encodeURIComponent(query)}`);
             const data = await res.json();
             if (data.con) {
                 let results = data.result || [];

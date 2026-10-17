@@ -39,7 +39,7 @@ const RecipeList = ({ type, id }) => {
         if (!window.confirm("Are you sure you want to delete this recipe?")) return;
 
         try {
-            const response = await fetch(`http://localhost:3000/recipes/${id}`, {
+            const response = await fetch(`${API_URL}/recipes/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
