@@ -53,7 +53,7 @@ const Comment = ({ recipeId }) => {
 
         setIsSubmitting(true);
         try {
-            const response = await fetch("http://localhost:3000/interactions/comment", {
+            const response = await fetch(`${API_URL}/interactions/comment`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -86,7 +86,7 @@ const Comment = ({ recipeId }) => {
         }
         if (!window.confirm("Are you sure you want to delete this comment?")) return;
         try{
-            const response = await fetch(`http://localhost:3000/interactions/comment`, {
+            const response = await fetch(`${API_URL}/interactions/comment`, {
                 method: 'DELETE',
                 headers: {
                     "Content-Type": "application/json",
